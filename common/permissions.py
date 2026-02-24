@@ -17,3 +17,10 @@ class IsSuperAdminOrAdminWriteElseReadOnly(BasePermission):
         if getattr(user, "role", None) == UserRoletype.ADMIN:
             return True
         return False
+    
+class DayTourPermission(BasePermission):
+    def has_permission(self, request, view):
+        user = request.user
+        if request.method in SAFE_METHODS:
+            return True
+        return user.role in ["superadmin", "admin", "agent"]

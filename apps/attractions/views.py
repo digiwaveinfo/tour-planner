@@ -14,7 +14,7 @@ from common.permissions import *
 class AttractionViewSet(ModelViewSet):
     queryset = Attraction.objects.filter(deleted_at__isnull=True)
     serializer_class = AttractionSerializer
-    permission_classes = [IsSuperAdminOrAdminWriteElseReadOnly]
+    permission_classes = [DayTourPermission,]
     filter_backends = [DjangoFilterBackend,SearchFilter,OrderingFilter,]
     parser_classes = [MultiPartParser, FormParser]
     filterset_class = AttractionFilter
