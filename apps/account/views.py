@@ -15,11 +15,6 @@ class UserViewSet(ModelViewSet):
             return FullUserSerializer
         return UserSerializer   
 
-    def get_serializer_context(self):
-        context = super().get_serializer_context()
-        context["request"] = self.request
-        return context  
-
     @action(detail=False, methods=["post"])
     def login(self, request):
         serializer = LoginSerializer(data=request.data)

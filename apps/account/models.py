@@ -23,7 +23,7 @@ class User(AbstractBaseUser,PermissionsMixin):
  name=models.CharField(max_length=150)
  email=models.EmailField(unique=True)
  phone=models.CharField(max_length=20,null=True,blank=True)
- role=models.CharField(max_length=20,choices=UserRoletype.CHOICES,default=UserRoletype.BASIC_USER)
+ role=models.CharField(max_length=20,choices=UserRoletype.CHOICES,default=UserRoletype.AGENT)
  avatar_url=models.CharField(max_length=500,null=True,blank=True)
  last_login_at=models.DateTimeField(null=True,blank=True)
  is_active=models.BooleanField(default=True)
