@@ -12,6 +12,14 @@ class UserSerializer(serializers.ModelSerializer):
         fields = ["id", "email", "name", "password"]
 
     def create(self, validated_data):
+        request = self.context.get("request")
+        role = "basic_user"
+        if request and request.user.is_authenticated:
+            if request.user.role in ["admin", "superadmin"] or request.user.is_superuser:
+                role = "agent"
+            elif request.user.role == "agent":
+                role = "basic_user"
+        validated_data["role"] = role
         password = validated_data.pop("password")
         user = User(**validated_data)
         user.set_password(password)
