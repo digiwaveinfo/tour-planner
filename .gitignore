@@ -1,21 +1,70 @@
+# =========================
 # Python
+# =========================
 __pycache__/
-*.pyc
-*.pyo
+*.py[cod]
+*$py.class
+*.so
 
-# Virtual env
-venv/
+# Distribution / packaging
+.Python
+build/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+*.egg-info/
+
+# =========================
+# Virtual Environment
+# =========================
 .venv/
+venv/
+env/
+ENV/
 
-# SQLite DB
-db.sqlite3
-
+# =========================
 # Django stuff
-media/
-staticfiles/
+# =========================
+*.log
+local_settings.py
+db.sqlite3
+db.sqlite3-journal
 
-# VS Code
+# Media & static generated
+/media
+/staticfiles
+
+# =========================
+# VS Code / IDE
+# =========================
 .vscode/
+.idea/
 
-# Environment variables
+# =========================
+# OS Files
+# =========================
+.DS_Store
+Thumbs.db
+
+# =========================
+# dotenv (VERY IMPORTANT)
+# =========================
 .env
+
+# =========================
+# Pytest / coverage
+# =========================
+.coverage
+htmlcov/
+.pytest_cache/
+
+# =========================
+# Migrations cache
+# =========================
+**/__pycache__/

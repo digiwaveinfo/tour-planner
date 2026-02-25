@@ -23,4 +23,5 @@ urlpatterns = [
     path('api/v1/geography/', include('apps.geography.urls')),
     path('api/v1/attractions/', include('apps.attractions.urls')),
     path('api/v1/day-tours/', include('apps.day_tours.urls')),
+    path('api/v1/inclusions/', include('apps.inclusions.urls')),
 ]
