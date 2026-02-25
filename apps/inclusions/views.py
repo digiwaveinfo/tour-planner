@@ -1,7 +1,9 @@
-from django.shortcuts import render
 from rest_framework.viewsets import ModelViewSet
 from .models import InclExclCategory,InclusionExclusion
 from .serializer import InclExclCategorySerializer,InclusionExclusionSerializer
+from rest_framework.decorators import action
+from collections import defaultdict
+from rest_framework.response import Response
 
 class InclExclCategoryViewSet(ModelViewSet):
     queryset = InclExclCategory.objects.filter(is_active=True).order_by("display_order")
@@ -24,3 +26,24 @@ class InclusionExclusionViewSet(ModelViewSet):
             qs = qs.filter(category_id=category)
 
         return qs.order_by("display_order")
+
+    @action(detail=False, methods=["get"], url_path="grouped")
+    def grouped(self, request):
+        country = request.query_params.get("country")
+        if not country: 
+            return Response({"error": "country required"}, status=400)
+        qs = InclusionExclusion.objects.filter(country_id=country,is_active=True).select_related("category")
+
+        data = {
+            "INCLUSION": defaultdict(list),
+            "EXCLUSION": defaultdict(list)
+        }
+
+        for item in qs:
+            data[item.type][item.category.name].append({
+                "id": item.id,
+                "service": item.item_service,
+                "notes": item.details_notes
+            })
+
+        return Response(data)
