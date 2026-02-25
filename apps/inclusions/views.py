@@ -4,13 +4,16 @@ from .serializer import InclExclCategorySerializer,InclusionExclusionSerializer
 from rest_framework.decorators import action
 from collections import defaultdict
 from rest_framework.response import Response
+from common.permissions import DayTourPermission
 
 class InclExclCategoryViewSet(ModelViewSet):
     queryset = InclExclCategory.objects.filter(is_active=True).order_by("display_order")
     serializer_class = InclExclCategorySerializer
+    permission_classes = [DayTourPermission]
 
 class InclusionExclusionViewSet(ModelViewSet):
     serializer_class = InclusionExclusionSerializer
+    permission_classes = [DayTourPermission]
 
     def get_queryset(self):
         qs = InclusionExclusion.objects.filter(is_active=True)
