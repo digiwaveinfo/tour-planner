@@ -25,4 +25,6 @@ urlpatterns = [
     path('api/v1/day-tours/', include('apps.day_tours.urls')),
     path('api/v1/inclusions/', include('apps.inclusions.urls')),
     path('api/v1/itinerary-templates/', include('apps.itinerary_templates.urls')),
+    path('api/v1/user-plans/', include('apps.user_plans.urls')),
+
 ]
