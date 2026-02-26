@@ -26,5 +26,6 @@ urlpatterns = [
     path('api/v1/inclusions/', include('apps.inclusions.urls')),
     path('api/v1/itinerary-templates/', include('apps.itinerary_templates.urls')),
     path('api/v1/user-plans/', include('apps.user_plans.urls')),
-
+    path('api/v1/audit/', include('apps.audit.urls')),
+    path('api/v1/common/', include('common.urls')),
 ]
