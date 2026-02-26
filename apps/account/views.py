@@ -4,6 +4,7 @@ from rest_framework import status
 from .serializer import *
 from rest_framework.decorators import action
 from rest_framework.response import Response
+from rest_framework.permissions import IsAuthenticated
 
 class UserViewSet(ModelViewSet):
     queryset = User.objects.all()
@@ -54,3 +55,10 @@ class UserViewSet(ModelViewSet):
                 "role": user.role
             }
         }, status=status.HTTP_201_CREATED)
+    
+    @action(detail=False, methods=["post"], permission_classes=[IsAuthenticated])
+    def logout(self, request):
+        serializer = LogoutSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response({"message": "Logout successful"})   
