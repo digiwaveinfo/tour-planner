@@ -1,15 +1,15 @@
 class InclusionExclusionType:
-  INCLUSION="inclusion"
-  EXCLUSION="exclusion"
+  INCLUSION="INCLUSION"
+  EXCLUSION="EXCLUSION"
   CHOICES=(
    (INCLUSION,"Inclusion"),
    (EXCLUSION,"Exclusion"),
   )
 
 class UserRoletype:
-  AGENT="agent"
-  ADMIN="admin"
-  BASIC_USER="basic_user"
+  AGENT="AGENT"
+  ADMIN="ADMIN"
+  BASIC_USER="BASIC_USER"
   CHOICES=(
    (AGENT,"Agent"),
    (ADMIN,"Admin"),
@@ -17,13 +17,13 @@ class UserRoletype:
   )
 
 class PLAN_STATUS:
-  DRAFT="draft"
-  CONFIRMED="confirmed"
-  SHARED="shared"
-  ARCHIVED="archived"
+  DRAFT="DRAFT"
+  CONFIRMED="CONFIRMED"
+  SHARED="SHARED"
+  ARCHIVED="ARCHIVED"
   CHOICES=(
-    ("draft","Draft"),
-    ("confirmed","Confirmed"),
-    ("shared","Shared"),
-    ("archived","Archived"),
+    (DRAFT,"Draft"),
+    (CONFIRMED,"Confirmed"),
+    (SHARED,"Shared"),
+    (ARCHIVED,"Archived"),
   )
