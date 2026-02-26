@@ -1,13 +1,12 @@
-import uuid
 from django.db import models
 from apps.account.models import User
 
 class AuditLog(models.Model):
- id=models.UUIDField(primary_key=True,default=uuid.uuid4,editable=False)
+ id=models.BigAutoField(primary_key=True)
  user=models.ForeignKey(User,on_delete=models.SET_NULL,null=True,blank=True,related_name="audit_logs")
  action=models.CharField(max_length=50)
  entity_type=models.CharField(max_length=50)
- entity_id=models.UUIDField(null=True,blank=True)
+ entity_id=models.BigIntegerField(null=True,blank=True)
  old_values=models.JSONField(null=True,blank=True)
  new_values=models.JSONField(null=True,blank=True)
  ip_address=models.CharField(max_length=45,null=True,blank=True)

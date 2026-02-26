@@ -1,10 +1,9 @@
-import uuid
 from django.db import models
 from apps.geography.models import Country
 from common.constant import InclusionExclusionType
 
 class InclExclCategory(models.Model):
- id=models.UUIDField(primary_key=True,default=uuid.uuid4,editable=False)
+ id=models.BigAutoField(primary_key=True)
  name=models.CharField(max_length=100,unique=True)
  display_order=models.IntegerField(default=0)
  is_active=models.BooleanField(default=True)
@@ -18,7 +17,7 @@ class InclExclCategory(models.Model):
   return self.name
  
 class InclusionExclusion(models.Model):
- id=models.UUIDField(primary_key=True,default=uuid.uuid4,editable=False)
+ id=models.BigAutoField(primary_key=True)
  country=models.ForeignKey(Country,on_delete=models.CASCADE,related_name="incl_excl")
  unique_code=models.CharField(max_length=20,unique=True)
  type=models.CharField(max_length=10,choices=InclusionExclusionType.CHOICES)

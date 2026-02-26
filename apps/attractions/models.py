@@ -1,9 +1,8 @@
-import uuid
 from django.db import models
 from apps.geography.models import Region
 
 class Attraction(models.Model):
- id=models.UUIDField(primary_key=True,default=uuid.uuid4,editable=False)
+ id=models.BigAutoField(primary_key=True)
  region=models.ForeignKey(Region,on_delete=models.CASCADE,related_name="attractions")
  reference_no=models.CharField(max_length=20,unique=True)
  name=models.CharField(max_length=200)

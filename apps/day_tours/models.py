@@ -1,11 +1,10 @@
-import uuid
 from django.db import models
 from apps.geography.models import Region
 from apps.account.models import User
 from apps.attractions.models import Attraction
 
 class DayTour(models.Model):
- id=models.UUIDField(primary_key=True,default=uuid.uuid4,editable=False)
+ id=models.BigAutoField(primary_key=True)
  region=models.ForeignKey(Region,on_delete=models.CASCADE,related_name="day_tours")
  unique_code=models.CharField(max_length=20,unique=True)
  activity_combination=models.CharField(max_length=500)
@@ -30,7 +29,7 @@ class DayTour(models.Model):
   return f"{self.unique_code}-{self.region}"
  
 class DayTourAttraction(models.Model):
- id=models.UUIDField(primary_key=True,default=uuid.uuid4,editable=False)
+ id=models.BigAutoField(primary_key=True)
  day_tour=models.ForeignKey(DayTour,on_delete=models.CASCADE,related_name="tour_attractions")
  attraction=models.ForeignKey(Attraction,on_delete=models.CASCADE,related_name="attraction_tours")
  visit_order=models.IntegerField(default=1)
