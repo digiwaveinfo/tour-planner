@@ -28,4 +28,5 @@ urlpatterns = [
     path('api/v1/user-plans/', include('apps.user_plans.urls')),
     path('api/v1/audit/', include('apps.audit.urls')),
     path('api/v1/common/', include('common.urls')),
+    path('api/v1/hotel/', include('apps.hotel.urls')),
 ]
