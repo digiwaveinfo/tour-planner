@@ -1,4 +1,3 @@
-import uuid
 from django.db import models
 from apps.account.models import User
 from apps.geography.models import Country
@@ -8,7 +7,7 @@ from apps.inclusions.models import InclusionExclusion
 from common.constant import PLAN_STATUS
 
 class UserPlan(models.Model):
- id=models.UUIDField(primary_key=True,default=uuid.uuid4,editable=False)
+ id=models.BigAutoField(primary_key=True)
  plan_number=models.CharField(max_length=20,unique=True)
  user=models.ForeignKey(User,on_delete=models.CASCADE,related_name="plans")
  country=models.ForeignKey(Country,on_delete=models.CASCADE,related_name="plans")
@@ -38,7 +37,7 @@ class UserPlan(models.Model):
   return f"{self.plan_number}-{self.name}"
 
 class UserPlanDay(models.Model):
- id=models.UUIDField(primary_key=True,default=uuid.uuid4,editable=False)
+ id=models.BigAutoField(primary_key=True)
  user_plan=models.ForeignKey(UserPlan,on_delete=models.CASCADE,related_name="days")
  day_number=models.IntegerField()
  day_tour=models.ForeignKey(DayTour,on_delete=models.PROTECT,related_name="plan_days")
@@ -60,7 +59,7 @@ class UserPlanDay(models.Model):
   return f"{self.user_plan}-{self.day_number}"
 
 class UserPlanInclExcl(models.Model):
- id=models.UUIDField(primary_key=True,default=uuid.uuid4,editable=False)
+ id=models.BigAutoField(primary_key=True)
  user_plan=models.ForeignKey(UserPlan,on_delete=models.CASCADE,related_name="incl_excl")
  incl_excl=models.ForeignKey(InclusionExclusion,on_delete=models.CASCADE,related_name="plan_links")
 

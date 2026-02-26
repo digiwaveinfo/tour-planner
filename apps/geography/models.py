@@ -1,8 +1,7 @@
-import uuid
 from django.db import models
 
 class Country(models.Model):
-    id = models.UUIDField(primary_key=True,default=uuid.uuid4,editable=False)
+    id=models.BigAutoField(primary_key=True)
     name = models.CharField(max_length=100)
     code = models.CharField(max_length=3, unique=True)
     iso_code = models.CharField(max_length=3,null=True,blank=True,unique=True)
@@ -21,7 +20,7 @@ class Country(models.Model):
         return f"{self.name} ({self.code})"
     
 class Region(models.Model):
-    id=models.UUIDField(primary_key=True,default=uuid.uuid4,editable=False)
+    id=models.BigAutoField(primary_key=True)
     country=models.ForeignKey(Country,on_delete=models.CASCADE,related_name="regions")
     name=models.CharField(max_length=150)
     code=models.CharField(max_length=10)

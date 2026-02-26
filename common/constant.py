@@ -9,9 +9,11 @@ class InclusionExclusionType:
 class UserRoletype:
   AGENT="agent"
   ADMIN="admin"
+  BASIC_USER="basic_user"
   CHOICES=(
    (AGENT,"Agent"),
    (ADMIN,"Admin"),
+   (BASIC_USER,"Basic User"),
   )
 
 class PLAN_STATUS:

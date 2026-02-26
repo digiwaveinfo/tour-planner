@@ -1,4 +1,3 @@
-import uuid
 from django.db import models
 from apps.geography.models import Country
 from apps.account.models import User
@@ -6,7 +5,7 @@ from apps.day_tours.models import DayTour
 from apps.inclusions.models import InclusionExclusion
 
 class ItineraryTemplate(models.Model):
- id=models.UUIDField(primary_key=True,default=uuid.uuid4,editable=False)
+ id=models.BigAutoField(primary_key=True)
  country=models.ForeignKey(Country,on_delete=models.CASCADE,related_name="templates")
  name=models.CharField(max_length=200)
  code=models.CharField(max_length=30,unique=True,null=True,blank=True)
@@ -29,7 +28,7 @@ class ItineraryTemplate(models.Model):
   return self.name
  
 class ItineraryTemplateDay(models.Model):
- id=models.UUIDField(primary_key=True,default=uuid.uuid4,editable=False)
+ id=models.BigAutoField(primary_key=True)
  template=models.ForeignKey(ItineraryTemplate,on_delete=models.CASCADE,related_name="days")
  day_number=models.IntegerField()
  day_tour=models.ForeignKey(DayTour,on_delete=models.PROTECT,related_name="template_days")
@@ -51,7 +50,7 @@ class ItineraryTemplateDay(models.Model):
   return f"{self.template}-{self.day_number}"
  
 class ItineraryTemplateInclExcl(models.Model):
- id=models.UUIDField(primary_key=True,default=uuid.uuid4,editable=False)
+ id=models.BigAutoField(primary_key=True)
  template=models.ForeignKey(ItineraryTemplate,on_delete=models.CASCADE,related_name="incl_excl")
  incl_excl=models.ForeignKey(InclusionExclusion,on_delete=models.CASCADE,related_name="template_links")
 
