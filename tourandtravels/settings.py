@@ -43,6 +43,9 @@ INSTALLED_APPS = [
     'django_filters',
     'rest_framework_simplejwt.token_blacklist',
 
+    # third party library for admin panel
+    'import_export',
+
     # apps
     'apps.account',
     'apps.attractions',
@@ -121,7 +124,7 @@ AUTH_PASSWORD_VALIDATORS = [
 
 LANGUAGE_CODE = 'en-us'
 
-TIME_ZONE = 'UTC'
+TIME_ZONE = 'Asia/Kolkata'
 
 USE_I18N = True
 
