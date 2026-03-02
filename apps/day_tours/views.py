@@ -7,6 +7,7 @@ from rest_framework.filters import SearchFilter, OrderingFilter
 from .models import DayTour, DayTourAttraction
 from .serializer import DayTourSerializer
 from common.permissions import DayTourPermission
+from django.db import transaction
 
 class DayTourViewSet(ModelViewSet):
     queryset = DayTour.objects.filter(deleted_at__isnull=True)\
@@ -17,11 +18,21 @@ class DayTourViewSet(ModelViewSet):
     filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
     filterset_fields = ["region", "is_active", "created_by"]
     search_fields = ["unique_code","activity_combination","overnight_location","itinerary_text"]
-
     ordering_fields = ["display_order", "created_at"]
 
+    def _generate_unique_code(self):
+        last = (DayTour.objects.select_for_update().order_by("-id").first())
+        if last and last.unique_code:
+            last_number = int(last.unique_code.split("-")[1])
+            next_number = last_number + 1
+        else:
+            next_number = 1
+        return f"DT-{str(next_number).zfill(4)}"
+
     def perform_create(self, serializer):
-        serializer.save(created_by=self.request.user)
+        with transaction.atomic():
+            generated_code = self._generate_unique_code()
+            serializer.save(created_by=self.request.user,unique_code=generated_code)
 
     def perform_destroy(self, instance):
         from django.utils import timezone
