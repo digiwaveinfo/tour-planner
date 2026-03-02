@@ -23,4 +23,8 @@ class DayTourPermission(BasePermission):
         user = request.user
         if request.method in SAFE_METHODS:
             return True
-        return user.role in [UserRoletype.SUPER_ADMIN,UserRoletype.AGENT]
+        if not user or not user.is_authenticated:
+            return False
+        if user.is_superuser:
+            return True
+        return user.role in [UserRoletype.SUPER_ADMIN, UserRoletype.AGENT]

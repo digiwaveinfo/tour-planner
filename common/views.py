@@ -10,6 +10,7 @@ from apps.day_tours.models import DayTour
 from apps.inclusions.models import InclExclCategory, InclusionExclusion
 from apps.itinerary_templates.models import ItineraryTemplate, ItineraryTemplateDay, ItineraryTemplateInclExcl
 from apps.audit.models import AuditLog
+from common.constant import UserRoletype
 
 class AdminDashboardViewSet(GenericViewSet):
 
@@ -17,30 +18,35 @@ class AdminDashboardViewSet(GenericViewSet):
 
     @action(detail=False, methods=["get"])
     def stats(self, request):
-
-        if request.user.role not in ["superadmin", "admin"]:
+        user = request.user
+        if not user.is_superuser and user.role != UserRoletype.SUPER_ADMIN:
             return Response({"error": "Permission denied"}, status=403)
 
-        data = {
-            "users": User.objects.count(),
-            "countries": Country.objects.count(),
-            "regions": Region.objects.count(),
-            "attractions": Attraction.objects.count(),
-            "plans": UserPlan.objects.count(),
-            "day_tours": DayTour.objects.count(),
-            "inclusions": InclusionExclusion.objects.count(),
-            "inclusions_categories": InclExclCategory.objects.count(),
-            "itinerary_templates": ItineraryTemplate.objects.count(),
-            "itinerary_templates_days": ItineraryTemplateDay.objects.count(),
-            "itinerary_templates_incl_excl": ItineraryTemplateInclExcl.objects.count(),
+        visible_users = User.objects.filter(
+            deleted_at__isnull=True, is_superuser=False
+        ).exclude(role=UserRoletype.SUPER_ADMIN).exclude(id=user.id)
 
-            "recent_users": User.objects.order_by("-id")[:5].values(
-                "id","name","email"
+        data = {
+            "user_count": visible_users.count(),
+            "country_count": Country.objects.count(),
+            "region_count": Region.objects.count(),
+            "attraction_count": Attraction.objects.count(),
+            "plan_count": UserPlan.objects.count(),
+            "day_tour_count": DayTour.objects.count(),
+            "inclusion_count": InclusionExclusion.objects.count(),
+            "template_count": ItineraryTemplate.objects.count(),
+
+            "recent_users": list(
+                visible_users.order_by("-created_at")[:5].values(
+                    "id", "name", "email", "role", "created_at"
+                )
             ),
 
-            "recent_logs": AuditLog.objects.order_by("-created_at")[:20].values(
-                "action","entity_type","created_at"
-            )
+            "recent_audit_logs": list(
+                AuditLog.objects.order_by("-created_at")[:20].values(
+                    "id", "action", "entity_type", "created_at"
+                )
+            ),
         }
 
         return Response(data)

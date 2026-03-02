@@ -47,6 +47,36 @@ class AttractionViewSet(ModelViewSet):
                 AttractionImage.objects.create(attraction=attraction,image=img)
         return Response(self.get_serializer(attraction).data)
 
+    def update(self, request, *args, **kwargs):
+        images = request.FILES.getlist("images")
+        remove_images = request.data.getlist("remove_images") if hasattr(request.data, 'getlist') else request.data.get("remove_images", [])
+        if isinstance(remove_images, str):
+            remove_images = [remove_images]
+
+        with transaction.atomic():
+            partial = kwargs.pop('partial', False)
+            instance = self.get_object()
+            serializer = self.get_serializer(instance, data=request.data, partial=partial)
+            serializer.is_valid(raise_exception=True)
+            attraction = serializer.save()
+
+            # Remove images by id
+            if remove_images:
+                AttractionImage.objects.filter(
+                    id__in=[int(i) for i in remove_images],
+                    attraction=attraction
+                ).delete()
+
+            # Add new images
+            for img in images:
+                AttractionImage.objects.create(attraction=attraction, image=img)
+
+        return Response(self.get_serializer(attraction).data)
+
+    def partial_update(self, request, *args, **kwargs):
+        kwargs['partial'] = True
+        return self.update(request, *args, **kwargs)
+
     @action(detail=False, methods=["post"], url_path="bulk-upload")
     def bulk_upload(self, request):
         file = request.FILES.get("file")
