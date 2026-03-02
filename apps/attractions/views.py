@@ -12,6 +12,7 @@ from django.db.models import Max
 import pandas as pd
 from apps.geography.models import Region
 from common.permissions import *
+import secrets
 
 class AttractionViewSet(ModelViewSet):
     queryset = Attraction.objects.filter(deleted_at__isnull=True)
@@ -25,18 +26,11 @@ class AttractionViewSet(ModelViewSet):
     ordering = ["display_order"]
 
     def _generate_reference_no(self):
-        last = (Attraction.objects.select_for_update().order_by("-id").first())
-        if last and last.reference_no:
-            try:
-                parts = last.reference_no.split("-")
-                last_number = int(parts[1])
-                next_number = last_number + 1
-            except (IndexError, ValueError):
-                next_number = Attraction.objects.count() + 1
-        else:
-            next_number = 1
-
-        return f"ATT-{str(next_number).zfill(4)}"
+        while True:
+            random_number = secrets.randbelow(900000) + 100000
+            code = f"ATT-{random_number}"
+            if not Attraction.objects.filter(reference_no=code).exists():
+                return code
 
     def create(self, request, *args, **kwargs):
         images = request.FILES.getlist("images")
@@ -56,7 +50,6 @@ class AttractionViewSet(ModelViewSet):
     @action(detail=False, methods=["post"], url_path="bulk-upload")
     def bulk_upload(self, request):
         file = request.FILES.get("file")
-
         if not file:
             return Response({"error": "File required"}, status=400)
         try:
@@ -66,36 +59,24 @@ class AttractionViewSet(ModelViewSet):
                 df = pd.read_csv(file)
             except:
                 return Response({"error": "Invalid file"}, status=400)
+
         df.columns = df.columns.str.strip()
         required_columns = ["region", "name", "latitude", "longitude"]
         df = df[[col for col in required_columns if col in df.columns]]
         records = df.to_dict("records")
         region_map = {r.id: r for r in Region.objects.only("id")}
-
         created_count = 0
         skipped = 0
+        to_create = []
 
         with transaction.atomic():
 
-            last = (Attraction.objects.select_for_update().order_by("-id").first())
-
-            if last and last.reference_no:
-                counter = int(last.reference_no.split("-")[1])
-            else:
-                counter = 0
-
-            to_create = []
-
             for row in records:
                 region = region_map.get(row.get("region"))
-
                 if not region:
                     skipped += 1
                     continue
-
-                counter += 1
-                generated_ref = f"ATT-{str(counter).zfill(4)}"
-
+                generated_ref = self._generate_reference_no()
                 to_create.append(
                     Attraction(
                         reference_no=generated_ref,
@@ -105,11 +86,9 @@ class AttractionViewSet(ModelViewSet):
                         longitude=row.get("longitude"),
                     )
                 )
-
             if to_create:
                 Attraction.objects.bulk_create(to_create, batch_size=1000)
                 created_count = len(to_create)
-
         return Response({
             "total_file_records": len(records),
             "created": created_count,

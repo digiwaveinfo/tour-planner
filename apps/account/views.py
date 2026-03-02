@@ -8,7 +8,6 @@ from rest_framework.permissions import IsAuthenticated
 
 class UserViewSet(ModelViewSet):
     serializer_class = UserSerializer
-    permission_classes = [IsAuthenticated]
     def get_queryset(self):
         user = self.request.user
         queryset = User.objects.filter(deleted_at__isnull=True,is_active=True).order_by("-created_at")
