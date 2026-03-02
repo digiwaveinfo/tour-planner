@@ -8,7 +8,6 @@ class Attraction(models.Model):
  name=models.CharField(max_length=200)
  key_features_notes=models.TextField(null=True,blank=True)
  source_citations=models.TextField(null=True,blank=True)
- image_url=models.CharField(max_length=500,null=True,blank=True)
  latitude=models.DecimalField(max_digits=10,decimal_places=7,null=True,blank=True)
  longitude=models.DecimalField(max_digits=10,decimal_places=7,null=True,blank=True)
  display_order=models.IntegerField(default=0)
@@ -25,3 +24,18 @@ class Attraction(models.Model):
 
  def __str__(self):
   return f"{self.name}-{self.reference_no}"
+ 
+class AttractionImage(models.Model):
+ id = models.BigAutoField(primary_key=True)
+ attraction = models.ForeignKey(Attraction, on_delete=models.CASCADE, related_name="images")
+ image = models.ImageField(upload_to="attraction_images/")
+ uploaded_at = models.DateTimeField(auto_now_add=True)
+
+ class Meta:
+  db_table = "attraction_images"
+  indexes = [
+   models.Index(fields=["attraction"]),
+  ]
+
+ def __str__(self):
+  return f"{self.attraction.name} - {self.id}"

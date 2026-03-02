@@ -1,12 +1,12 @@
 from rest_framework.viewsets import ModelViewSet
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.filters import SearchFilter, OrderingFilter
-from .models import Attraction
-from .serializer import AttractionSerializer
+from .models import Attraction,AttractionImage
+from .serializer import AttractionSerializer,AttractionImageSerializer
 from .filters import AttractionFilter
 from rest_framework.decorators import action
 from rest_framework.response import Response
-from rest_framework.parsers import JSONParser
+from rest_framework.parsers import FormParser,MultiPartParser
 from django.db import transaction
 import pandas as pd
 from apps.geography.models import Region
@@ -17,11 +17,22 @@ class AttractionViewSet(ModelViewSet):
     serializer_class = AttractionSerializer
     permission_classes = [DayTourPermission]
     filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
-    parser_classes = [JSONParser]
+    parser_classes = [MultiPartParser, FormParser]
     filterset_class = AttractionFilter
     search_fields = ["name", "reference_no", "key_features_notes"]
     ordering_fields = ["name", "display_order", "created_at"]
     ordering = ["display_order"]
+
+    def create(self, request, *args, **kwargs):
+        images = request.FILES.getlist("images")
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        attraction = serializer.save()
+
+        for img in images:
+            AttractionImage.objects.create(
+                attraction=attraction,image=img)
+        return Response(self.get_serializer(attraction).data)
 
     @action(detail=False, methods=["post"], url_path="bulk-upload")
     def bulk_upload(self, request):

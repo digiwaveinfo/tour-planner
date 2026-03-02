@@ -19,7 +19,6 @@ class Hotel(models.Model):
  latitude=models.DecimalField(max_digits=10,decimal_places=7,null=True,blank=True)
  longitude=models.DecimalField(max_digits=10,decimal_places=7,null=True,blank=True)
  amenities=models.JSONField(null=True,blank=True)
- image_url=models.CharField(max_length=500,null=True,blank=True)
  price_notes=models.CharField(max_length=255,null=True,blank=True)
  display_order=models.IntegerField(default=0)
  is_active=models.BooleanField(default=True)
@@ -36,3 +35,18 @@ class Hotel(models.Model):
 
  def __str__(self):
   return self.name
+ 
+class HotelImage(models.Model):
+    id = models.BigAutoField(primary_key=True)
+    hotel = models.ForeignKey(Hotel,on_delete=models.CASCADE,related_name="images")
+    image = models.ImageField(upload_to="hotel_images/")
+    uploaded_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = "hotel_images"
+        indexes = [
+            models.Index(fields=["hotel"]),
+        ]
+
+    def __str__(self):
+        return f"{self.hotel.name} - {self.id}"
