@@ -21,6 +21,7 @@ class UserSerializer(serializers.ModelSerializer):
             elif request.user.role == UserRoletype.AGENT:
                 role = UserRoletype.USER
         validated_data["role"] = role
+        validated_data["created_by"] = request.user if request and request.user.is_authenticated else None
         password = validated_data.pop("password")
         user = User(**validated_data)
         user.set_password(password)
@@ -43,13 +44,24 @@ class LoginSerializer(serializers.Serializer):
             "user": user,
             "access": str(refresh.access_token),
             "refresh": str(refresh)
-        }   
+        } 
 
 class FullUserSerializer(serializers.ModelSerializer):
+    created_by = serializers.SerializerMethodField()
 
     class Meta:
         model = User
         exclude = ["password"]
+
+    def get_created_by(self, obj):
+        if obj.created_by:
+            return {
+                "id": obj.created_by.id,
+                "name": obj.created_by.name,
+                "email": obj.created_by.email,
+                "role": obj.created_by.role
+            }
+        return None
 
 class RegisterSerializer(serializers.ModelSerializer):
 
@@ -68,6 +80,7 @@ class RegisterSerializer(serializers.ModelSerializer):
             elif request.user.role == UserRoletype.AGENT:
                 role = UserRoletype.USER
         validated_data["role"] = role
+        validated_data["created_by"] = request.user if request and request.user.is_authenticated else None
         password = validated_data.pop("password")
         user = User(**validated_data)
         user.set_password(password)
