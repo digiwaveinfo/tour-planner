@@ -4,15 +4,29 @@ from .serializer import *
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from common.permissions import DayTourPermission
+from django.db import transaction
 
 class ItineraryTemplateViewSet(ModelViewSet):
     queryset = ItineraryTemplate.objects.all()
     serializer_class = ItineraryTemplateSerializer
     permission_classes = [DayTourPermission]
 
-    def perform_create(self, serializer):
-        serializer.save(created_by=self.request.user)
+    def _generate_code(self):
+        last = (ItineraryTemplate.objects.select_for_update().order_by("-id").first())
+        if last and last.code:
+            try:
+                last_number = int(last.code.split("-")[1])
+                next_number = last_number + 1
+            except (IndexError, ValueError):
+                next_number = ItineraryTemplate.objects.count() + 1
+        else:
+            next_number = 1
+        return f"IT-{str(next_number).zfill(4)}"
 
+    def perform_create(self, serializer):
+        with transaction.atomic():
+            generated_code = self._generate_code()
+            serializer.save(created_by=self.request.user,code=generated_code)
 
     @action(detail=True, methods=["post"])
     def add_day(self, request, pk=None):

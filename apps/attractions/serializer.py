@@ -11,3 +11,4 @@ class AttractionSerializer(serializers.ModelSerializer):
  class Meta:
   model=Attraction
   fields="__all__"
+  read_only_fields = ["reference_no"]

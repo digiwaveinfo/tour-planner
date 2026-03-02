@@ -14,7 +14,7 @@ class DayTourSerializer(serializers.ModelSerializer):
     class Meta:
         model = DayTour
         fields = "__all__"
-        read_only_fields = ("id","created_by","created_at","updated_at","deleted_at")
+        read_only_fields = ("id","created_by","created_at","updated_at","deleted_at","unique_code")
 
 class DayTourAttractionSerializer(serializers.ModelSerializer):
 

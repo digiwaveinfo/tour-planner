@@ -5,7 +5,7 @@ class ItineraryTemplateSerializer(serializers.ModelSerializer):
  class Meta:
   model=ItineraryTemplate
   fields="__all__"
-  read_only_fields=("created_by","created_at","updated_at","deleted_at")
+  read_only_fields=("created_by","created_at","updated_at","deleted_at","code",)
 
 class ItineraryTemplateDaySerializer(serializers.ModelSerializer):
     class Meta:
