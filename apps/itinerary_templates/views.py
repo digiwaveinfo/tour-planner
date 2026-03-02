@@ -5,6 +5,7 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 from common.permissions import DayTourPermission
 from django.db import transaction
+import secrets,string
 
 class ItineraryTemplateViewSet(ModelViewSet):
     queryset = ItineraryTemplate.objects.all()
@@ -12,16 +13,11 @@ class ItineraryTemplateViewSet(ModelViewSet):
     permission_classes = [DayTourPermission]
 
     def _generate_code(self):
-        last = (ItineraryTemplate.objects.select_for_update().order_by("-id").first())
-        if last and last.code:
-            try:
-                last_number = int(last.code.split("-")[1])
-                next_number = last_number + 1
-            except (IndexError, ValueError):
-                next_number = ItineraryTemplate.objects.count() + 1
-        else:
-            next_number = 1
-        return f"IT-{str(next_number).zfill(4)}"
+        while True:
+            random_number = secrets.randbelow(900000) + 100000
+            code = f"IT-{random_number}"
+            if not ItineraryTemplate.objects.filter(code=code).exists():
+                return code
 
     def perform_create(self, serializer):
         with transaction.atomic():

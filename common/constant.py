@@ -7,14 +7,15 @@ class InclusionExclusionType:
   )
 
 class UserRoletype:
-  AGENT="AGENT"
-  ADMIN="ADMIN"
-  BASIC_USER="BASIC_USER"
-  CHOICES=(
-   (AGENT,"Agent"),
-   (ADMIN,"Admin"),
-   (BASIC_USER,"Basic User"),
-  )
+    AGENT = "AGENT"
+    USER = "USER"
+    SUPER_ADMIN = "SUPER_ADMIN"
+
+    CHOICES = (
+        (AGENT, "Agent"),
+        (USER, "User"),
+        (SUPER_ADMIN, "Super Admin"),
+    )
 
 class PLAN_STATUS:
   DRAFT="DRAFT"
@@ -27,3 +28,40 @@ class PLAN_STATUS:
     (SHARED,"Shared"),
     (ARCHIVED,"Archived"),
   )
+
+class TravelType:
+    GROUP = "GROUP"
+    SOLO = "SOLO"
+    COUPLE = "COUPLE"
+    GENERAL = "GENERAL"
+
+    CHOICES = (
+        (GROUP, "Group Tour"),
+        (SOLO, "Solo Travel"),
+        (COUPLE, "Couple"),
+        (GENERAL, "General"),
+    )
+
+class ValidityMode:
+    OPEN = "OPEN"
+    DATE_RANGE = "DATE_RANGE"
+    MONTH = "MONTH"
+    YEAR = "YEAR"
+
+    CHOICES = (
+        (OPEN, "Open Validity"),
+        (DATE_RANGE, "Date Range"),
+        (MONTH, "Month Based"),
+        (YEAR, "Year Based"),
+    )
+
+class CurrencyType:
+    INR = "INR"
+    USD = "USD"
+    EUR = "EUR"
+
+    CHOICES = [
+        (INR, "Indian Rupee"),
+        (USD, "US Dollar"),
+        (EUR, "Euro"),
+    ]
