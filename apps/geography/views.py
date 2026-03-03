@@ -5,11 +5,13 @@ from .serializer import CountrySerializer,RegionSerializer
 from common.permissions import *
 from rest_framework.decorators import action
 from rest_framework.response import Response
+from rest_framework.parsers import MultiPartParser, FormParser
 
 class CountryViewSet(ModelViewSet):
     queryset = Country.objects.filter(deleted_at__isnull=True)
     serializer_class = CountrySerializer
     permission_classes = [IsSuperAdminOrAdminWriteElseReadOnly]
+    parser_classes = [MultiPartParser, FormParser]
 
 class RegionViewSet(ModelViewSet):
     serializer_class = RegionSerializer

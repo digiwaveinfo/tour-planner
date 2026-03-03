@@ -5,6 +5,7 @@ class Country(models.Model):
     name = models.CharField(max_length=100)
     code = models.CharField(max_length=3, unique=True)
     iso_code = models.CharField(max_length=3,null=True,blank=True,unique=True)
+    images = models.JSONField(default=list, blank=True)
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -18,12 +19,13 @@ class Country(models.Model):
 
     def __str__(self):
         return f"{self.name} ({self.code})"
-    
+
 class Region(models.Model):
     id=models.BigAutoField(primary_key=True)
     country=models.ForeignKey(Country,on_delete=models.CASCADE,related_name="regions")
     name=models.CharField(max_length=150)
     code=models.CharField(max_length=10)
+    images = models.JSONField(default=list, blank=True)
     description=models.TextField(null=True,blank=True)
     display_order=models.IntegerField(default=0)
     is_active=models.BooleanField(default=True)
