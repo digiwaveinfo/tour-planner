@@ -3,6 +3,7 @@ from apps.geography.models import Country
 from apps.account.models import User
 from apps.day_tours.models import DayTour
 from apps.inclusions.models import InclusionExclusion
+from django.db.models import Q
 
 class ItineraryTemplate(models.Model):
  id=models.BigAutoField(primary_key=True)
@@ -12,6 +13,7 @@ class ItineraryTemplate(models.Model):
  total_nights=models.IntegerField()
  total_days=models.IntegerField()
  description=models.TextField(null=True,blank=True)
+ is_default = models.BooleanField(default=False)
  is_active=models.BooleanField(default=True)
  created_by=models.ForeignKey(User,on_delete=models.CASCADE,related_name="created_templates")
  created_at=models.DateTimeField(auto_now_add=True)
@@ -20,6 +22,13 @@ class ItineraryTemplate(models.Model):
 
  class Meta:
   db_table="itinerary_templates"
+  constraints = [
+    models.UniqueConstraint(
+        fields=["country","total_days"],
+        condition=Q(is_default=True),
+        name="unique_default_template_per_country_days"
+    )
+]
   indexes=[
    models.Index(fields=["country","is_active","created_by"]),
   ]

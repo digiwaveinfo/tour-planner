@@ -5,12 +5,23 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 from common.permissions import DayTourPermission
 from django.db import transaction
-import secrets,string
+import secrets
 
 class ItineraryTemplateViewSet(ModelViewSet):
     queryset = ItineraryTemplate.objects.all()
     serializer_class = ItineraryTemplateSerializer
     permission_classes = [DayTourPermission]
+
+    def get_queryset(self):
+        queryset = ItineraryTemplate.objects.filter(deleted_at__isnull=True,is_active=True)
+        country = self.request.query_params.get("country")
+        total_days = self.request.query_params.get("total_days")
+        if country:
+            queryset = queryset.filter(country_id=country)
+        if total_days:
+            queryset = queryset.filter(total_days=total_days)
+        queryset = queryset.order_by("-is_default", "id")
+        return queryset
 
     def _generate_code(self):
         while True:

@@ -1,12 +1,6 @@
 from rest_framework import serializers
 from apps.itinerary_templates.models import *
 
-class ItineraryTemplateSerializer(serializers.ModelSerializer):
- class Meta:
-  model=ItineraryTemplate
-  fields="__all__"
-  read_only_fields=("created_by","created_at","updated_at","deleted_at","code",)
-
 class ItineraryTemplateDaySerializer(serializers.ModelSerializer):
     class Meta:
         model = ItineraryTemplateDay
@@ -21,6 +15,13 @@ class ItineraryTemplateDaySerializer(serializers.ModelSerializer):
                   f"Day {day_number} exceeds template max {template.total_days}"
               )
       return data
+
+class ItineraryTemplateSerializer(serializers.ModelSerializer):
+ days = ItineraryTemplateDaySerializer(many=True, read_only=True)
+ class Meta:
+  model=ItineraryTemplate
+  fields="__all__"
+  read_only_fields=("created_by","created_at","updated_at","deleted_at","code",)
 
 class ItineraryTemplateInclExclSerializer(serializers.ModelSerializer):
     class Meta:
