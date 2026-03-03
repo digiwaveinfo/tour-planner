@@ -16,6 +16,7 @@ class CountryViewSet(ModelViewSet):
 class RegionViewSet(ModelViewSet):
     serializer_class = RegionSerializer
     permission_classes = [IsSuperAdminOrAdminWriteElseReadOnly]
+    parser_classes = [MultiPartParser, FormParser]
 
     def get_queryset(self):
         qs = Region.objects.select_related("country")
