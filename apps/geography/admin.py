@@ -1,19 +1,29 @@
 from django.contrib import admin
-from .models import Country,Region
+from .models import Country,Region,CountryImage,RegionImage
+
+class CountryImageInline(admin.TabularInline):
+    model = CountryImage
+    extra = 1
 
 @admin.register(Country)
 class CountryAdmin(admin.ModelAdmin):
- list_display=("id","name","code","iso_code","images","is_active","created_at")
+ list_display=("id","name","code","iso_code","is_active","created_at")
  search_fields=("name","code","iso_code")
  list_filter=("is_active",)
  ordering=("name",)
  readonly_fields=("created_at","updated_at","deleted_at")
+ inlines = [CountryImageInline]
+
+class RegionImageInline(admin.TabularInline):
+    model = RegionImage
+    extra = 1
 
 @admin.register(Region)
 class RegionAdmin(admin.ModelAdmin):
- list_display=("id","name","code","country","images","description","display_order","is_active")
+ list_display=("id","name","code","country","description","display_order","is_active")
  search_fields=("name","code","country__name")
  list_filter=("country","is_active")
  ordering=("country","display_order","name")
  autocomplete_fields=("country",)
  readonly_fields=("created_at","updated_at","deleted_at")
+ inlines = [RegionImageInline]
