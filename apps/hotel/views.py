@@ -25,11 +25,24 @@ class HotelViewSet(ModelViewSet):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         hotel = serializer.save()
-
         for img in images:
             HotelImage.objects.create(
                 hotel=hotel,
                 image=img
             )
+        return Response(self.get_serializer(hotel).data)
 
+    def update(self, request, *args, **kwargs):
+        images = request.FILES.getlist("images")
+        partial = kwargs.pop("partial", False)
+        instance = self.get_object()
+        serializer = self.get_serializer(instance, data=request.data, partial=partial)
+        serializer.is_valid(raise_exception=True)
+        hotel = serializer.save()
+        if images:
+            for img in images:
+                HotelImage.objects.create(
+                    hotel=hotel,
+                    image=img
+                )
         return Response(self.get_serializer(hotel).data)
