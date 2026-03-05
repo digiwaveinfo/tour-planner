@@ -2,17 +2,26 @@ from rest_framework.viewsets import ModelViewSet
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
+from django_filters.rest_framework import DjangoFilterBackend
 from .models import UserPlan,UserPlanDay,UserPlanInclExcl
 from .serializer import UserPlanSerializer,UserPlanDaySerializer,UserPlanInclExclSerializer
 from .utils import generate_plan_number,generate_share_token
-from common.permissions import DayTourPermission
+from common.permissions import DayTourPermission, UserPlanPermission
+from common.constant import UserRoletype
 
 class UserPlanViewSet(ModelViewSet):
     serializer_class=UserPlanSerializer
-    permission_classes=[DayTourPermission,IsAuthenticated]
+    permission_classes=[UserPlanPermission]
+    filter_backends=[DjangoFilterBackend]
+    filterset_fields=["country","status","user"]
 
     def get_queryset(self):
-        return UserPlan.objects.filter(user=self.request.user).order_by("-id")
+        user=self.request.user
+        if user.role==UserRoletype.SUPER_ADMIN or user.is_superuser:
+            return UserPlan.objects.all().order_by("-id")
+        if user.role==UserRoletype.AGENT:
+            return UserPlan.objects.filter(user=user).order_by("-id")
+        return UserPlan.objects.filter(user=user).order_by("-id")
 
     def perform_create(self,serializer):
         serializer.save(
@@ -57,18 +66,24 @@ class UserPlanViewSet(ModelViewSet):
     
 class UserPlanDayViewSet(ModelViewSet):
     serializer_class=UserPlanDaySerializer
-    permission_classes=[DayTourPermission,IsAuthenticated]
+    permission_classes=[UserPlanPermission]
 
     def get_queryset(self):
+        user=self.request.user
+        if user.role==UserRoletype.SUPER_ADMIN or user.is_superuser:
+            return UserPlanDay.objects.all()
         return UserPlanDay.objects.filter(
-            user_plan__user=self.request.user
+            user_plan__user=user
         )
     
 class UserPlanInclExclViewSet(ModelViewSet):
     serializer_class=UserPlanInclExclSerializer
-    permission_classes=[DayTourPermission,IsAuthenticated]
+    permission_classes=[UserPlanPermission]
 
     def get_queryset(self):
+        user=self.request.user
+        if user.role==UserRoletype.SUPER_ADMIN or user.is_superuser:
+            return UserPlanInclExcl.objects.all()
         return UserPlanInclExcl.objects.filter(
-            user_plan__user=self.request.user
+            user_plan__user=user
         )

@@ -1,7 +1,10 @@
 from rest_framework import serializers
 from apps.itinerary_templates.models import *
+from apps.day_tours.serializer import DayTourSerializer
 
 class ItineraryTemplateDaySerializer(serializers.ModelSerializer):
+    day_tour_detail = DayTourSerializer(source="day_tour", read_only=True)
+
     class Meta:
         model = ItineraryTemplateDay
         fields = "__all__"
@@ -16,14 +19,19 @@ class ItineraryTemplateDaySerializer(serializers.ModelSerializer):
               )
       return data
 
+class ItineraryTemplateInclExclSerializer(serializers.ModelSerializer):
+    item_text=serializers.CharField(source="incl_excl.item_service",read_only=True)
+    type=serializers.CharField(source="incl_excl.type",read_only=True)
+    category_name=serializers.CharField(source="incl_excl.category.name",read_only=True)
+    class Meta:
+        model = ItineraryTemplateInclExcl
+        fields = "__all__"
+
 class ItineraryTemplateSerializer(serializers.ModelSerializer):
  days = ItineraryTemplateDaySerializer(many=True, read_only=True)
+ incl_excl = ItineraryTemplateInclExclSerializer(many=True, read_only=True)
+ country_name = serializers.CharField(source="country.name", read_only=True)
  class Meta:
   model=ItineraryTemplate
   fields="__all__"
   read_only_fields=("created_by","created_at","updated_at","deleted_at","code",)
-
-class ItineraryTemplateInclExclSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = ItineraryTemplateInclExcl
-        fields = "__all__"

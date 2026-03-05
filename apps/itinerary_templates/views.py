@@ -13,7 +13,12 @@ class ItineraryTemplateViewSet(ModelViewSet):
     permission_classes = [DayTourPermission]
 
     def get_queryset(self):
-        queryset = ItineraryTemplate.objects.filter(deleted_at__isnull=True,is_active=True)
+        queryset = ItineraryTemplate.objects.filter(
+            deleted_at__isnull=True, is_active=True
+        ).prefetch_related(
+            "days__day_tour__tour_attractions__attraction",
+            "incl_excl__incl_excl__category",
+        ).select_related("country")
         country = self.request.query_params.get("country")
         total_days = self.request.query_params.get("total_days")
         if country:
