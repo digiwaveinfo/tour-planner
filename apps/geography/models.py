@@ -12,13 +12,22 @@ class Country(models.Model):
 
     class Meta:
         db_table = "countries"
-        indexes = [
-            models.Index(fields=["name"]),
-        ]
+        indexes = [models.Index(fields=["name"]),]
 
     def __str__(self):
         return f"{self.name} ({self.code})"
-    
+
+class CountryImage(models.Model):
+    country = models.ForeignKey(Country,on_delete=models.CASCADE,related_name="country_images")
+    image = models.ImageField(upload_to="country/")
+    created_at = models.DateTimeField(auto_now_add=True)
+    class Meta:
+        db_table = "country_images"
+        indexes = [models.Index(fields=["country"]),]
+
+    def __str__(self):
+        return f"{self.country.name} - {self.image.name}"
+
 class Region(models.Model):
     id=models.BigAutoField(primary_key=True)
     country=models.ForeignKey(Country,on_delete=models.CASCADE,related_name="regions")
@@ -36,12 +45,22 @@ class Region(models.Model):
 
         constraints=[
             models.UniqueConstraint(fields=["country","name"],name="unique_country_name"),
-            models.UniqueConstraint(fields=["country","code"],name="unique_country_code"),
-        ]
+            models.UniqueConstraint(fields=["country","code"],name="unique_country_code"),]
 
-        indexes=[
-            models.Index(fields=["country","name"]),
-        ]
+        indexes=[models.Index(fields=["country","name"]),]
 
     def __str__(self):
         return self.name
+
+
+class RegionImage(models.Model):
+    region = models.ForeignKey(Region,on_delete=models.CASCADE,related_name="region_images")
+    image = models.ImageField(upload_to="region/")
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = "region_images"
+        indexes = [models.Index(fields=["region"]),]
+
+    def __str__(self):
+        return self.region.name

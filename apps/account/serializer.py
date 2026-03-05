@@ -2,6 +2,7 @@ from rest_framework import serializers
 from .models import User
 from django.contrib.auth import get_user_model
 from rest_framework_simplejwt.tokens import RefreshToken
+from common.constant import UserRoletype
 User = get_user_model()
 
 class UserSerializer(serializers.ModelSerializer):
@@ -9,17 +10,18 @@ class UserSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = ["id", "email", "name", "password"]
+        fields = ["id", "email", "name", "password","flag"]
 
     def create(self, validated_data):
         request = self.context.get("request")
-        role = "basic_user"
+        role = UserRoletype.USER
         if request and request.user.is_authenticated:
-            if request.user.role in ["admin", "superadmin"] or request.user.is_superuser:
-                role = "agent"
-            elif request.user.role == "agent":
-                role = "basic_user"
+            if request.user.role == UserRoletype.SUPER_ADMIN:
+                role = UserRoletype.AGENT
+            elif request.user.role == UserRoletype.AGENT:
+                role = UserRoletype.USER
         validated_data["role"] = role
+        validated_data["created_by"] = request.user if request and request.user.is_authenticated else None
         password = validated_data.pop("password")
         user = User(**validated_data)
         user.set_password(password)
@@ -42,13 +44,24 @@ class LoginSerializer(serializers.Serializer):
             "user": user,
             "access": str(refresh.access_token),
             "refresh": str(refresh)
-        }   
+        } 
 
 class FullUserSerializer(serializers.ModelSerializer):
+    created_by = serializers.SerializerMethodField()
 
     class Meta:
         model = User
         exclude = ["password"]
+
+    def get_created_by(self, obj):
+        if obj.created_by:
+            return {
+                "id": obj.created_by.id,
+                "name": obj.created_by.name,
+                "email": obj.created_by.email,
+                "role": obj.created_by.role
+            }
+        return None
 
 class RegisterSerializer(serializers.ModelSerializer):
 
@@ -60,13 +73,14 @@ class RegisterSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         request = self.context.get("request")
-        role = "basic_user"
+        role = UserRoletype.USER
         if request and request.user.is_authenticated:
-            if request.user.is_superuser or request.user.role in ["admin","superadmin"]:
-                role = "agent"
-            elif request.user.role == "agent":
-                role = "basic_user"
+            if request.user.role == UserRoletype.SUPER_ADMIN:
+                role = UserRoletype.AGENT
+            elif request.user.role == UserRoletype.AGENT:
+                role = UserRoletype.USER
         validated_data["role"] = role
+        validated_data["created_by"] = request.user if request and request.user.is_authenticated else None
         password = validated_data.pop("password")
         user = User(**validated_data)
         user.set_password(password)

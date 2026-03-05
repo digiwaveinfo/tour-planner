@@ -7,21 +7,58 @@ from rest_framework.filters import SearchFilter, OrderingFilter
 from .models import DayTour, DayTourAttraction
 from .serializer import DayTourSerializer
 from common.permissions import DayTourPermission
+from django.db import transaction
+import secrets
+from django.db.models import Q
+from common.constant import UserRoletype
 
 class DayTourViewSet(ModelViewSet):
-    queryset = DayTour.objects.filter(deleted_at__isnull=True)\
-        .select_related("region", "created_by")\
-        .prefetch_related("tour_attractions__attraction")
     serializer_class = DayTourSerializer
-    permission_classes = [IsAuthenticated, DayTourPermission]
+    permission_classes = [DayTourPermission]
     filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
-    filterset_fields = ["region", "is_active", "created_by"]
+    filterset_fields = ["region", "is_active", "created_by","travel_type",
+    "validity_mode",]
     search_fields = ["unique_code","activity_combination","overnight_location","itinerary_text"]
-
     ordering_fields = ["display_order", "created_at"]
 
+    def _generate_unique_code(self):
+        while True:
+            random_number = secrets.randbelow(900000) + 100000
+            code = f"DT-{random_number}"
+            if not DayTour.objects.filter(unique_code=code).exists():
+                return code
+
     def perform_create(self, serializer):
-        serializer.save(created_by=self.request.user)
+        with transaction.atomic():
+            generated_code = self._generate_unique_code()
+            serializer.save(created_by=self.request.user,unique_code=generated_code)
+
+    def get_queryset(self):
+        user = self.request.user
+        base_queryset = DayTour.objects.filter(
+            deleted_at__isnull=True
+        ).select_related("region", "created_by")\
+         .prefetch_related("tour_attractions__attraction")
+
+        if not user or not user.is_authenticated:
+            return base_queryset
+
+        if user.role == UserRoletype.SUPER_ADMIN:
+            return base_queryset
+
+        if user.role == UserRoletype.AGENT:
+            if user.flag:
+                return base_queryset.filter(
+                    Q(created_by=user) |
+                    Q(created_by__role=UserRoletype.SUPER_ADMIN)
+                )
+            return base_queryset.filter(created_by=user)
+
+        if user.role == UserRoletype.USER:
+            return base_queryset.filter(
+                created_by__role=UserRoletype.AGENT
+            )
+        return base_queryset.none()
 
     def perform_destroy(self, instance):
         from django.utils import timezone
