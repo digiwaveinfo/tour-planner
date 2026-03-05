@@ -32,7 +32,7 @@ class Region(models.Model):
     id=models.BigAutoField(primary_key=True)
     country=models.ForeignKey(Country,on_delete=models.CASCADE,related_name="regions")
     name=models.CharField(max_length=150)
-    code=models.CharField(max_length=10)
+    code=models.CharField(max_length=10,unique=True)
     description=models.TextField(null=True,blank=True)
     display_order=models.IntegerField(default=0)
     is_active=models.BooleanField(default=True)
