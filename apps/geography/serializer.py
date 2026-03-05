@@ -22,16 +22,6 @@ class CountrySerializer(serializers.ModelSerializer):
         for image in images:
             CountryImage.objects.create(country=country,image=image)
         return country
-    
-    def update(self, instance, validated_data):
-        images = validated_data.pop("images", None)
-        for attr, value in validated_data.items():
-            setattr(instance, attr, value)
-        instance.save()
-        if images:
-            for image in images:
-                CountryImage.objects.create(country=instance, image=image)
-        return instance
 
 class RegionImageSerializer(serializers.ModelSerializer):
     class Meta:
@@ -53,13 +43,3 @@ class RegionSerializer(serializers.ModelSerializer):
         for image in images:
             RegionImage.objects.create(region=region,image=image)
         return region
-    
-    def update(self, instance, validated_data):
-        images = validated_data.pop("images", None)
-        for attr, value in validated_data.items():
-            setattr(instance, attr, value)
-        instance.save()
-        if images:
-            for image in images:
-                RegionImage.objects.create(region=instance, image=image)
-        return instance
