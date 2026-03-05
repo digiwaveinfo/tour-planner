@@ -8,9 +8,12 @@ from .models import DayTour, DayTourAttraction
 from .serializer import DayTourSerializer
 from common.permissions import DayTourPermission
 from django.db import transaction
-import secrets
 from django.db.models import Q
 from common.constant import UserRoletype
+from rest_framework.parsers import MultiPartParser, FormParser
+import pandas as pd
+from apps.geography.models import Region
+from apps.attractions.models import Attraction
 
 class DayTourViewSet(ModelViewSet):
     serializer_class = DayTourSerializer
@@ -20,18 +23,7 @@ class DayTourViewSet(ModelViewSet):
     "validity_mode",]
     search_fields = ["unique_code","activity_combination","overnight_location","itinerary_text"]
     ordering_fields = ["display_order", "created_at"]
-
-    def _generate_unique_code(self):
-        while True:
-            random_number = secrets.randbelow(900000) + 100000
-            code = f"DT-{random_number}"
-            if not DayTour.objects.filter(unique_code=code).exists():
-                return code
-
-    def perform_create(self, serializer):
-        with transaction.atomic():
-            generated_code = self._generate_unique_code()
-            serializer.save(created_by=self.request.user,unique_code=generated_code)
+    parser_classes = [MultiPartParser, FormParser]
 
     def get_queryset(self):
         user = self.request.user
@@ -62,6 +54,54 @@ class DayTourViewSet(ModelViewSet):
         instance.deleted_at = timezone.now()
         instance.save()
 
+    @action(detail=False, methods=["post"], url_path="bulk-upload")
+    def bulk_upload(self, request):
+        file = request.FILES.get("file")
+        if not file:
+            return Response({"error": "File required"}, status=400)
+        try:
+            df = pd.read_excel(file)
+        except:
+            df = pd.read_csv(file)
+        created=[]
+        skipped=[]
+        with transaction.atomic():
+            for index,row in df.iterrows():
+                region_name=str(row.get("region","")).strip()
+                try:
+                    region=Region.objects.get(name__iexact=region_name)
+                except Region.DoesNotExist:
+                    skipped.append({"row":index+1,"reason":"region not found"})
+                    continue
+                try:
+                    valid_from = None if pd.isna(row.get("valid_from")) else row.get    ("valid_from")
+                    valid_to = None if pd.isna(row.get("valid_to")) else row.get("valid_to")
+                    obj=DayTour.objects.create(
+                        region=region,
+                        travel_type=row.get("travel_type") or "GENERAL",
+                        validity_mode=row.get("validity_mode") or "OPEN",
+                        valid_from=valid_from,
+                        valid_to=valid_to,
+                        price=row.get("price") or 0,
+                        currency=row.get("currency") or "EUR",
+                        activity_combination=row.get("activity_combination"),
+                        est_time_distance=row.get("est_time_distance"),
+                        overnight_location=row.get("overnight_location"),
+                        source_file=row.get("source_file"),
+                        itinerary_text=row.get("itinerary_text"),
+                        display_order=row.get("display_order") or 0,
+                        created_by=request.user
+                    )
+                    created.append(obj.unique_code)
+                except Exception as e:
+                    skipped.append({
+                        "row":index+1,
+                        "reason":str(e)})
+        return Response({
+            "created":created,
+            "skipped":skipped
+        })
+
     @action(detail=True, methods=["post"])
     def add_attractions(self, request, pk=None):
         tour = self.get_object()
@@ -90,3 +130,27 @@ class DayTourViewSet(ModelViewSet):
             "message": "Removed successfully",
             "deleted": deleted
         })
+    
+    @action(detail=False, methods=["post"], url_path="bulk-attractions")
+    def bulk_attractions(self, request):
+        file=request.FILES.get("file")
+        df=pd.read_excel(file)
+        created=[]
+        skipped=[]
+        for index,row in df.iterrows():
+            try:
+                tour=DayTour.objects.get(unique_code=row["day_tour_code"])
+                attraction=Attraction.objects.get(reference_no=row["attraction_reference_no"])
+                DayTourAttraction.objects.create(
+                    day_tour=tour,
+                    attraction=attraction,
+                    visit_order=row.get("visit_order",1))
+                created.append(attraction.reference_no)
+            except Exception as e:
+                skipped.append({
+                    "row":index+1,
+                    "reason":str(e)})
+        return Response({
+            "created":created,
+            "skipped":skipped
+            })

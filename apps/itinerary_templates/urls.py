@@ -3,7 +3,7 @@ from .views import *
 
 router = DefaultRouter()
 router.register("templates", ItineraryTemplateViewSet,basename="templates")
-router.register("days", ItineraryTemplateDay,basename="days")
+router.register("days", ItineraryTemplateDayViewSet,basename="days")
 router.register("incl-excl", ItineraryTemplateInclExclViewSet,basename="incl-excl")
 
 urlpatterns = router.urls

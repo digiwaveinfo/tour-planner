@@ -4,6 +4,7 @@ from apps.account.models import User
 from apps.day_tours.models import DayTour
 from apps.inclusions.models import InclusionExclusion
 from django.db.models import Q
+from django.utils import timezone
 
 class ItineraryTemplate(models.Model):
  id=models.BigAutoField(primary_key=True)
@@ -35,6 +36,24 @@ class ItineraryTemplate(models.Model):
 
  def __str__(self):
   return self.name
+ 
+ def generate_code(self):
+    today = timezone.now().strftime("%Y%m%d")
+    prefix = "ITN"
+    last = ItineraryTemplate.objects.filter(
+        code__startswith=f"{prefix}-{today}"
+    ).order_by("-code").first()
+    if last:
+        last_number = int(last.code.split("-")[-1])
+        new_number = last_number + 1
+    else:
+        new_number = 1
+    return f"{prefix}-{today}-{str(new_number).zfill(4)}"
+ 
+ def save(self, *args, **kwargs):
+    if not self.code:
+        self.code = self.generate_code()
+    super().save(*args, **kwargs)
  
 class ItineraryTemplateDay(models.Model):
  id=models.BigAutoField(primary_key=True)

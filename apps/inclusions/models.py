@@ -1,6 +1,7 @@
 from django.db import models
 from apps.geography.models import Country
 from common.constant import InclusionExclusionType
+from django.utils import timezone
 
 class InclExclCategory(models.Model):
  id=models.BigAutoField(primary_key=True)
@@ -37,7 +38,26 @@ class InclusionExclusion(models.Model):
    models.Index(fields=["country","type","category"]),
    models.Index(fields=["country","type"]),
    models.Index(fields=["is_active"]),
+   models.Index(fields=["unique_code"]),
   ]
 
  def __str__(self):
   return f"{self.unique_code}-{self.item_service}"
+ 
+ def generate_unique_code(self):
+    today = timezone.now().strftime("%Y%m%d")
+    prefix = "INC" if self.type == "INCLUSION" else "EXC"
+    last = InclusionExclusion.objects.filter(
+        unique_code__startswith=f"{prefix}-{today}"
+    ).order_by("-unique_code").first()
+    if last:
+        last_number = int(last.unique_code.split("-")[-1])
+        new_number = last_number + 1
+    else:
+        new_number = 1
+    return f"{prefix}-{today}-{str(new_number).zfill(4)}"
+ 
+ def save(self, *args, **kwargs):
+    if not self.unique_code:
+        self.unique_code = self.generate_unique_code()
+    super().save(*args, **kwargs)

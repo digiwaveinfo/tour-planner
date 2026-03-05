@@ -3,6 +3,7 @@ from apps.geography.models import Region
 from apps.account.models import User
 from apps.attractions.models import Attraction
 from common.constant import CurrencyType
+from django.utils import timezone
 
 class DayTour(models.Model):
  id=models.BigAutoField(primary_key=True)
@@ -29,11 +30,28 @@ class DayTour(models.Model):
  class Meta:
   db_table="day_tours"
   indexes=[
-   models.Index(fields=["region","overnight_location","is_active","created_by"]),
+   models.Index(fields=["region","unique_code","overnight_location","is_active","created_by"]),
   ]
 
  def __str__(self):
   return f"{self.unique_code}-{self.region}"
+ 
+ def generate_unique_code(self):
+    today = timezone.now().strftime("%Y%m%d")
+    last = DayTour.objects.filter(
+        unique_code__startswith=f"DT-{today}"
+    ).order_by("-unique_code").first()
+    if last:
+        last_number = int(last.unique_code.split("-")[-1])
+        new_number = last_number + 1
+    else:
+        new_number = 1
+    return f"DT-{today}-{str(new_number).zfill(4)}"
+ 
+ def save(self, *args, **kwargs):
+    if not self.unique_code:
+        self.unique_code = self.generate_unique_code()
+    super().save(*args, **kwargs)
  
 class DayTourAttraction(models.Model):
  id=models.BigAutoField(primary_key=True)
