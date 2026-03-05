@@ -25,24 +25,12 @@ class AttractionViewSet(ModelViewSet):
     ordering_fields = ["name", "display_order", "created_at"]
     ordering = ["display_order"]
 
-    def _generate_reference_no(self):
-        while True:
-            random_number = secrets.randbelow(900000) + 100000
-            code = f"ATT-{random_number}"
-            if not Attraction.objects.filter(reference_no=code).exists():
-                return code
-
     def create(self, request, *args, **kwargs):
         images = request.FILES.getlist("images")
-
         with transaction.atomic():
-            generated_ref = self._generate_reference_no()
-            data = request.data.copy()
-            data["reference_no"] = generated_ref
-            serializer = self.get_serializer(data=data)
+            serializer = self.get_serializer(data=request.data)
             serializer.is_valid(raise_exception=True)
             attraction = serializer.save()
-
             for img in images:
                 AttractionImage.objects.create(attraction=attraction,image=img)
         return Response(self.get_serializer(attraction).data)
@@ -60,14 +48,12 @@ class AttractionViewSet(ModelViewSet):
             serializer.is_valid(raise_exception=True)
             attraction = serializer.save()
 
-            # Remove images by id
             if remove_images:
                 AttractionImage.objects.filter(
                     id__in=[int(i) for i in remove_images],
                     attraction=attraction
                 ).delete()
 
-            # Add new images
             for img in images:
                 AttractionImage.objects.create(attraction=attraction, image=img)
 
@@ -84,43 +70,60 @@ class AttractionViewSet(ModelViewSet):
             return Response({"error": "File required"}, status=400)
         try:
             df = pd.read_excel(file)
-        except:
-            try:
-                df = pd.read_csv(file)
-            except:
-                return Response({"error": "Invalid file"}, status=400)
-
+        except Exception:
+            df = pd.read_csv(file)
         df.columns = df.columns.str.strip()
-        required_columns = ["region", "name", "latitude", "longitude"]
-        df = df[[col for col in required_columns if col in df.columns]]
-        records = df.to_dict("records")
-        region_map = {r.id: r for r in Region.objects.only("id")}
-        created_count = 0
-        skipped = 0
-        to_create = []
-
+        created = []
+        skipped = []
         with transaction.atomic():
-
-            for row in records:
-                region = region_map.get(row.get("region"))
-                if not region:
-                    skipped += 1
+            for index, row in df.iterrows():
+                region_name = str(row.get("region", "")).strip()
+                name = str(row.get("name", "")).strip()
+                key_features_notes = str(row.get("key_features_notes", "")).strip()
+                source_citations = str(row.get("source_citations", "")).strip()
+                latitude = row.get("latitude")
+                longitude = row.get("longitude")
+                display_order = row.get("display_order") or 0
+                if not region_name or not name:
+                    skipped.append({
+                        "row": index + 2,
+                        "reason": "Region or Name missing"
+                    })
                     continue
-                generated_ref = self._generate_reference_no()
-                to_create.append(
-                    Attraction(
-                        reference_no=generated_ref,
-                        region=region,
-                        name=row.get("name"),
-                        latitude=row.get("latitude"),
-                        longitude=row.get("longitude"),
-                    )
+                try:
+                    region = Region.objects.get(name__iexact=region_name)
+                except Region.DoesNotExist:
+                    skipped.append({
+                        "row": index + 2,
+                        "reason": f"Region not found: {region_name}"
+                    })
+                    continue
+                if Attraction.objects.filter(
+                    name__iexact=name,
+                    region=region
+                ).exists():
+                    skipped.append({
+                        "row": index + 2,
+                        "reason": "Duplicate attraction"
+                    })
+                    continue
+                attraction = Attraction.objects.create(
+                    region=region,
+                    name=name,
+                    key_features_notes=key_features_notes,
+                    source_citations=source_citations,
+                    latitude=latitude,
+                    longitude=longitude,
+                    display_order=display_order
                 )
-            if to_create:
-                Attraction.objects.bulk_create(to_create, batch_size=1000)
-                created_count = len(to_create)
+                created.append({
+                    "row": index + 2,
+                    "name": attraction.name,
+                    "reference_no": attraction.reference_no
+                })
         return Response({
-            "total_file_records": len(records),
-            "created": created_count,
+            "created_count": len(created),
+            "skipped_count": len(skipped),
+            "created": created,
             "skipped": skipped
         })

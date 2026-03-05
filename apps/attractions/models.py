@@ -1,5 +1,6 @@
 from django.db import models
 from apps.geography.models import Region
+from django.utils import timezone
 
 class Attraction(models.Model):
  id=models.BigAutoField(primary_key=True)
@@ -19,11 +20,27 @@ class Attraction(models.Model):
  class Meta:
   db_table="attractions"
   indexes=[
-   models.Index(fields=["region","name","is_active"]),
+   models.Index(fields=["reference_no","region","name","is_active"]),
   ]
 
  def __str__(self):
   return f"{self.name}-{self.reference_no}"
+ 
+ def generate_reference_no(self):
+        today = timezone.now().strftime("%Y%m%d")
+        last = Attraction.objects.filter(
+            reference_no__startswith=f"ATT-{today}").order_by("-reference_no").first()
+        if last:
+            last_number = int(last.reference_no.split("-")[-1])
+            new_number = last_number + 1
+        else:
+            new_number = 1
+        return f"ATT-{today}-{str(new_number).zfill(4)}"
+
+ def save(self, *args, **kwargs):
+        if not self.reference_no:
+            self.reference_no = self.generate_reference_no()
+        super().save(*args, **kwargs)
  
 class AttractionImage(models.Model):
  id = models.BigAutoField(primary_key=True)
