@@ -80,7 +80,17 @@ class ItineraryTemplateViewSet(ModelViewSet):
     @action(detail=True, methods=["post"])
     def add_day(self, request, pk=None):
         template = self.get_object()
-        serializer = ItineraryTemplateDaySerializer(data=request.data)
+        day_number = request.data.get("day_number")
+        # If this day_number already exists for the template, update it
+        existing = ItineraryTemplateDayModel.objects.filter(
+            template=template, day_number=day_number
+        ).first()
+        if existing:
+            serializer = ItineraryTemplateDaySerializer(
+                existing, data=request.data, partial=True
+            )
+        else:
+            serializer = ItineraryTemplateDaySerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         serializer.save(template=template)
         return Response(serializer.data)
