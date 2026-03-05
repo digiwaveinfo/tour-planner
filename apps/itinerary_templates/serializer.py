@@ -8,6 +8,9 @@ class ItineraryTemplateDaySerializer(serializers.ModelSerializer):
     class Meta:
         model = ItineraryTemplateDay
         fields = "__all__"
+        extra_kwargs = {
+            'template': {'required': False},
+        }
 
     def validate(self, data):
       template = data.get("template") or getattr(self.instance, "template", None)

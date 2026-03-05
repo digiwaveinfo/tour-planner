@@ -1,10 +1,15 @@
 from rest_framework.viewsets import ModelViewSet
-from .models import *
+from .models import (
+    ItineraryTemplate,
+    ItineraryTemplateDay as ItineraryTemplateDayModel,
+    ItineraryTemplateInclExcl,
+)
 from .serializer import *
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from common.permissions import DayTourPermission
 from django.db import transaction
+from django.db.models import Q
 import secrets
 
 class ItineraryTemplateViewSet(ModelViewSet):
@@ -102,10 +107,17 @@ class ItineraryTemplateViewSet(ModelViewSet):
             "deleted": deleted
         })
 
-class ItineraryTemplateDay(ModelViewSet):
-    queryset = ItineraryTemplateDay.objects.all()
+class ItineraryTemplateDayViewSet(ModelViewSet):
+    queryset = ItineraryTemplateDayModel.objects.all()
     serializer_class = ItineraryTemplateDaySerializer
     permission_classes = [DayTourPermission]
+
+    def get_queryset(self):
+        qs = ItineraryTemplateDayModel.objects.all()
+        template = self.request.query_params.get("template")
+        if template:
+            qs = qs.filter(template_id=template)
+        return qs.order_by("day_number")
 
 class ItineraryTemplateInclExclViewSet(ModelViewSet):
     queryset = ItineraryTemplateInclExcl.objects.all()
