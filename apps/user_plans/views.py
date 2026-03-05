@@ -1,8 +1,10 @@
+from django.db.models import Q
 from rest_framework.viewsets import ModelViewSet
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from django_filters.rest_framework import DjangoFilterBackend
+from rest_framework.filters import SearchFilter
 from .models import UserPlan,UserPlanDay,UserPlanInclExcl
 from .serializer import UserPlanSerializer,UserPlanDaySerializer,UserPlanInclExclSerializer
 from .utils import generate_plan_number,generate_share_token
@@ -12,15 +14,19 @@ from common.constant import UserRoletype
 class UserPlanViewSet(ModelViewSet):
     serializer_class=UserPlanSerializer
     permission_classes=[UserPlanPermission]
-    filter_backends=[DjangoFilterBackend]
+    filter_backends=[DjangoFilterBackend,SearchFilter]
     filterset_fields=["country","status","user"]
+    search_fields=["name","plan_number","user__name","user__email","client_name","country__name"]
 
     def get_queryset(self):
         user=self.request.user
         if user.role==UserRoletype.SUPER_ADMIN or user.is_superuser:
             return UserPlan.objects.all().order_by("-id")
         if user.role==UserRoletype.AGENT:
-            return UserPlan.objects.filter(user=user).order_by("-id")
+            # Agent sees own plans + plans from users they created
+            return UserPlan.objects.filter(
+                Q(user=user) | Q(user__created_by=user)
+            ).order_by("-id")
         return UserPlan.objects.filter(user=user).order_by("-id")
 
     def perform_create(self,serializer):

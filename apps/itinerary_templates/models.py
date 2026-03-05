@@ -6,12 +6,19 @@ from apps.inclusions.models import InclusionExclusion
 from django.db.models import Q
 
 class ItineraryTemplate(models.Model):
+ TRAVEL_TYPE_CHOICES = [
+     ('COUPLE', 'Couple'),
+     ('GROUP', 'Group'),
+     ('SOLO', 'Solo'),
+ ]
+
  id=models.BigAutoField(primary_key=True)
  country=models.ForeignKey(Country,on_delete=models.CASCADE,related_name="templates")
  name=models.CharField(max_length=200)
  code=models.CharField(max_length=30,unique=True,null=True,blank=True)
  total_nights=models.IntegerField()
  total_days=models.IntegerField()
+ travel_type=models.CharField(max_length=10,choices=TRAVEL_TYPE_CHOICES,null=True,blank=True)
  description=models.TextField(null=True,blank=True)
  is_default = models.BooleanField(default=False)
  is_active=models.BooleanField(default=True)

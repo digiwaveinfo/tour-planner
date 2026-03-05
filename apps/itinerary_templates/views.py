@@ -21,12 +21,44 @@ class ItineraryTemplateViewSet(ModelViewSet):
         ).select_related("country")
         country = self.request.query_params.get("country")
         total_days = self.request.query_params.get("total_days")
+        travel_type = self.request.query_params.get("travel_type")
         if country:
             queryset = queryset.filter(country_id=country)
         if total_days:
             queryset = queryset.filter(total_days=total_days)
+
+        # Smart fallback: try type-specific first, fall back to all
+        if travel_type:
+            typed_qs = queryset.filter(
+                Q(travel_type=travel_type) | Q(travel_type__isnull=True)
+            )
+            if typed_qs.exists():
+                queryset = typed_qs
+            # else: keep the full queryset (show all templates)
+
         queryset = queryset.order_by("-is_default", "id")
         return queryset
+
+    @action(detail=False, methods=["get"])
+    def available_days(self, request):
+        """Return distinct total_days values for a country, with travel_type fallback."""
+        qs = ItineraryTemplate.objects.filter(
+            deleted_at__isnull=True, is_active=True
+        )
+        country = request.query_params.get("country")
+        travel_type = request.query_params.get("travel_type")
+        if country:
+            qs = qs.filter(country_id=country)
+
+        if travel_type:
+            typed_qs = qs.filter(
+                Q(travel_type=travel_type) | Q(travel_type__isnull=True)
+            )
+            if typed_qs.exists():
+                qs = typed_qs
+
+        days = sorted(qs.values_list("total_days", flat=True).distinct())
+        return Response({"days": days})
 
     def _generate_code(self):
         while True:
