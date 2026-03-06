@@ -43,7 +43,7 @@ class ItineraryTemplateAdmin(ImportExportModelAdmin):
  list_filter=("country","is_active")
  ordering=("country","name")
  autocomplete_fields=("country","created_by")
- readonly_fields=("created_at","updated_at","deleted_at")
+ readonly_fields=("total_nights","total_days","created_at","updated_at","deleted_at")
 
 class ItineraryTemplateDayResource(resources.ModelResource):
     template_code = fields.Field(column_name="template_code",attribute="template",widget=TemplateWidget(ItineraryTemplate, "code"),)

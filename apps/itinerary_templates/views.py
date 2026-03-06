@@ -27,7 +27,7 @@ class ItineraryTemplateViewSet(ModelViewSet):
 
     def perform_create(self, serializer):
         with transaction.atomic():
-            serializer.save(created_by=self.request.user)
+            serializer.save(created_by=self.request.user,total_days=1,total_nights=1,is_default=True,)
 
     @action(detail=True, methods=["post"])
     def add_day(self, request, pk=None):
@@ -89,8 +89,8 @@ class ItineraryTemplateViewSet(ModelViewSet):
                     obj = ItineraryTemplate.objects.create(
                         country=country,
                         name=row["name"],
-                        total_nights=row["total_nights"],
-                        total_days=row["total_days"],
+                        total_nights=1,
+                        total_days=1,
                         description=row.get("description", ""),
                         is_default=str(row.get("is_default", "FALSE")).upper() == "TRUE",
                         created_by=request.user,

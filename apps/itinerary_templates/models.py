@@ -11,8 +11,8 @@ class ItineraryTemplate(models.Model):
  country=models.ForeignKey(Country,on_delete=models.CASCADE,related_name="templates")
  name=models.CharField(max_length=200)
  code=models.CharField(max_length=30,unique=True,null=True,blank=True)
- total_nights=models.IntegerField()
- total_days=models.IntegerField()
+ total_nights=models.IntegerField(default=1,editable=False,null=True,blank=True)
+ total_days=models.IntegerField(default=1,editable=False,null=True,blank=True)
  description=models.TextField(null=True,blank=True)
  is_default = models.BooleanField(default=False)
  is_active=models.BooleanField(default=True)
@@ -51,6 +51,9 @@ class ItineraryTemplate(models.Model):
     return f"{prefix}-{today}-{str(new_number).zfill(4)}"
  
  def save(self, *args, **kwargs):
+    self.total_days = 1
+    self.total_nights = 1
+    self.is_default = True
     if not self.code:
         self.code = self.generate_code()
     super().save(*args, **kwargs)
