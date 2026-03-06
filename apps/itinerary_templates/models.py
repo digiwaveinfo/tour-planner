@@ -53,7 +53,6 @@ class ItineraryTemplate(models.Model):
  def save(self, *args, **kwargs):
     self.total_days = 1
     self.total_nights = 1
-    self.is_default = True
     if not self.code:
         self.code = self.generate_code()
     super().save(*args, **kwargs)

@@ -17,9 +17,12 @@ class ItineraryTemplateViewSet(ModelViewSet):
     def get_queryset(self):
         queryset = ItineraryTemplate.objects.filter(deleted_at__isnull=True,is_active=True)
         country = self.request.query_params.get("country")
+        region=self.request.query_params.get("region")
         total_days = self.request.query_params.get("total_days")
         if country:
             queryset = queryset.filter(country_id=country)
+        if region:
+            queryset=queryset.filter(days__day_tour__region_id=region)
         if total_days:
             queryset = queryset.filter(total_days=total_days)
         queryset = queryset.order_by("-is_default", "id")
@@ -27,7 +30,7 @@ class ItineraryTemplateViewSet(ModelViewSet):
 
     def perform_create(self, serializer):
         with transaction.atomic():
-            serializer.save(created_by=self.request.user,total_days=1,total_nights=1,is_default=True,)
+            serializer.save(created_by=self.request.user,total_days=1,total_nights=1,)
 
     @action(detail=True, methods=["post"])
     def add_day(self, request, pk=None):
