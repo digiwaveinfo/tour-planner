@@ -84,43 +84,71 @@ class AttractionViewSet(ModelViewSet):
             return Response({"error": "File required"}, status=400)
         try:
             df = pd.read_excel(file)
-        except:
+        except Exception:
             try:
+                file.seek(0)
                 df = pd.read_csv(file)
-            except:
-                return Response({"error": "Invalid file"}, status=400)
+            except Exception:
+                return Response({"error": "Invalid file. Upload .xlsx or .csv"}, status=400)
 
-        df.columns = df.columns.str.strip()
-        required_columns = ["region", "name", "latitude", "longitude"]
-        df = df[[col for col in required_columns if col in df.columns]]
+        df.columns = df.columns.str.strip().str.lower()
+        if "name" not in df.columns:
+            return Response({"error": "Missing required column: name"}, status=400)
+
+        # Build region lookup maps (by id and by name)
+        regions = Region.objects.select_related("country").only("id", "name", "country__name")
+        region_id_map = {r.id: r for r in regions}
+        region_name_map = {r.name.strip().lower(): r for r in regions}
+
         records = df.to_dict("records")
-        region_map = {r.id: r for r in Region.objects.only("id")}
         created_count = 0
         skipped = 0
+        errors = []
         to_create = []
 
         with transaction.atomic():
+            for idx, row in enumerate(records, start=2):
+                # Resolve region by id or name
+                region = None
+                region_val = row.get("region_id") or row.get("region")
+                if region_val is not None:
+                    if isinstance(region_val, (int, float)) and not pd.isna(region_val):
+                        region = region_id_map.get(int(region_val))
+                    elif isinstance(region_val, str) and region_val.strip():
+                        region = region_name_map.get(region_val.strip().lower())
 
-            for row in records:
-                region = region_map.get(row.get("region"))
                 if not region:
+                    errors.append(f"Row {idx}: Invalid or missing region '{region_val}'")
                     skipped += 1
                     continue
-                generated_ref = self._generate_reference_no()
+
+                name = row.get("name")
+                if not name or (isinstance(name, float) and pd.isna(name)):
+                    errors.append(f"Row {idx}: Missing name")
+                    skipped += 1
+                    continue
+
+                lat = row.get("latitude")
+                lng = row.get("longitude")
                 to_create.append(
                     Attraction(
-                        reference_no=generated_ref,
+                        reference_no=self._generate_reference_no(),
                         region=region,
-                        name=row.get("name"),
-                        latitude=row.get("latitude"),
-                        longitude=row.get("longitude"),
+                        name=str(name).strip(),
+                        key_features_notes=str(row["key_features_notes"]).strip() if row.get("key_features_notes") and not pd.isna(row.get("key_features_notes")) else None,
+                        source_citations=str(row["source_citations"]).strip() if row.get("source_citations") and not pd.isna(row.get("source_citations")) else None,
+                        latitude=lat if lat and not pd.isna(lat) else None,
+                        longitude=lng if lng and not pd.isna(lng) else None,
+                        display_order=int(row["display_order"]) if row.get("display_order") and not pd.isna(row.get("display_order")) else 0,
                     )
                 )
             if to_create:
                 Attraction.objects.bulk_create(to_create, batch_size=1000)
                 created_count = len(to_create)
+
         return Response({
             "total_file_records": len(records),
             "created": created_count,
-            "skipped": skipped
+            "skipped": skipped,
+            "errors": errors[:50],
         })

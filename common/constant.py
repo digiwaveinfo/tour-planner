@@ -33,13 +33,11 @@ class TravelType:
     GROUP = "GROUP"
     SOLO = "SOLO"
     COUPLE = "COUPLE"
-    GENERAL = "GENERAL"
 
     CHOICES = (
         (GROUP, "Group Tour"),
         (SOLO, "Solo Travel"),
         (COUPLE, "Couple"),
-        (GENERAL, "General"),
     )
 
 class ValidityMode:

@@ -3,9 +3,9 @@ from .models import ItineraryTemplate,ItineraryTemplateDay,ItineraryTemplateIncl
 
 @admin.register(ItineraryTemplate)
 class ItineraryTemplateAdmin(admin.ModelAdmin):
- list_display=("id","name","country","total_nights","total_days","is_active")
+ list_display=("id","name","country","total_nights","total_days","travel_type","is_active")
  search_fields=("name","code","country__name")
- list_filter=("country","is_active")
+ list_filter=("country","is_active","travel_type")
  ordering=("country","name")
  autocomplete_fields=("country","created_by")
  readonly_fields=("created_at","updated_at","deleted_at")

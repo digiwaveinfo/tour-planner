@@ -33,6 +33,18 @@ class CountrySerializer(serializers.ModelSerializer):
                 CountryImage.objects.create(country=instance, image=image)
         return instance
 
+    def update(self, instance, validated_data):
+        images = validated_data.pop("images", [])
+        remove_images = self.context.get("request").data.getlist("remove_images") if self.context.get("request") else []
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
+        instance.save()
+        if remove_images:
+            CountryImage.objects.filter(id__in=[int(i) for i in remove_images], country=instance).delete()
+        for image in images:
+            CountryImage.objects.create(country=instance, image=image)
+        return instance
+
 class RegionImageSerializer(serializers.ModelSerializer):
     class Meta:
         model = RegionImage
