@@ -40,7 +40,7 @@ class ItineraryTemplateAdmin(ImportExportModelAdmin):
  resource_class = ItineraryTemplateResource
  list_display=("id","code","name","country","total_nights","total_days","is_active")
  search_fields=("name","code","country__name")
- list_filter=("country","is_active")
+ list_filter=("country","is_active","travel_type")
  ordering=("country","name")
  autocomplete_fields=("country","created_by")
  readonly_fields=("created_at","updated_at","deleted_at")
