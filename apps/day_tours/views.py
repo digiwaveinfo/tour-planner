@@ -10,7 +10,7 @@ from common.permissions import DayTourPermission
 from django.db import transaction
 from django.db.models import Q
 from common.constant import UserRoletype
-from rest_framework.parsers import MultiPartParser, FormParser
+from rest_framework.parsers import MultiPartParser, FormParser,JSONParser
 import pandas as pd
 from apps.geography.models import Region
 from apps.attractions.models import Attraction
@@ -23,7 +23,7 @@ class DayTourViewSet(ModelViewSet):
     "validity_mode",]
     search_fields = ["unique_code","activity_combination","overnight_location","itinerary_text"]
     ordering_fields = ["display_order", "created_at"]
-    parser_classes = [MultiPartParser, FormParser]
+    parser_classes = [MultiPartParser, FormParser,JSONParser]
 
     def get_queryset(self):
         user = self.request.user

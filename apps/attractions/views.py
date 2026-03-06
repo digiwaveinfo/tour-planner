@@ -6,20 +6,18 @@ from .serializer import AttractionSerializer
 from .filters import AttractionFilter
 from rest_framework.decorators import action
 from rest_framework.response import Response
-from rest_framework.parsers import FormParser, MultiPartParser
+from rest_framework.parsers import FormParser, MultiPartParser,JSONParser
 from django.db import transaction
-from django.db.models import Max
 import pandas as pd
 from apps.geography.models import Region
 from common.permissions import *
-import secrets
 
 class AttractionViewSet(ModelViewSet):
     queryset = Attraction.objects.filter(deleted_at__isnull=True)
     serializer_class = AttractionSerializer
     permission_classes = [DayTourPermission]
     filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
-    parser_classes = [MultiPartParser, FormParser]
+    parser_classes = [MultiPartParser, FormParser,JSONParser]
     filterset_class = AttractionFilter
     search_fields = ["name", "reference_no", "key_features_notes"]
     ordering_fields = ["name", "display_order", "created_at"]

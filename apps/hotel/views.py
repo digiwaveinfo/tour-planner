@@ -7,7 +7,7 @@ from .serializer import HotelSerializer
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from common.permissions import *
-from rest_framework.parsers import MultiPartParser, FormParser
+from rest_framework.parsers import MultiPartParser, FormParser,JSONParser
 import pandas as pd
 from django.db import transaction
 from apps.geography.models import Country,Region
@@ -21,7 +21,7 @@ class HotelViewSet(ModelViewSet):
     search_fields = ["name", "city"]
     ordering_fields = ["name", "city", "created_at"]
     ordering = ["name"]
-    parser_classes = [MultiPartParser, FormParser]
+    parser_classes = [MultiPartParser, FormParser,JSONParser]
 
     def create(self, request, *args, **kwargs):
         images = request.FILES.getlist("images")

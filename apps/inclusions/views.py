@@ -7,14 +7,14 @@ from rest_framework.response import Response
 from common.permissions import DayTourPermission
 import pandas as pd
 from django.db import transaction
-from rest_framework.parsers import MultiPartParser, FormParser
+from rest_framework.parsers import MultiPartParser, FormParser,JSONParser
 from apps.geography.models import Country
 
 class InclExclCategoryViewSet(ModelViewSet):
     queryset = InclExclCategory.objects.filter(is_active=True).order_by("display_order")
     serializer_class = InclExclCategorySerializer
     permission_classes = [DayTourPermission]
-    parser_classes = [MultiPartParser, FormParser]
+    parser_classes = [MultiPartParser, FormParser,JSONParser]
 
     @action(detail=False, methods=["post"], url_path="bulk-upload")
     def bulk_upload(self, request):
@@ -50,7 +50,7 @@ class InclExclCategoryViewSet(ModelViewSet):
 class InclusionExclusionViewSet(ModelViewSet):
     serializer_class = InclusionExclusionSerializer
     permission_classes = [DayTourPermission]
-    parser_classes = [MultiPartParser, FormParser]
+    parser_classes = [MultiPartParser, FormParser,JSONParser]
 
     def get_queryset(self):
         qs = InclusionExclusion.objects.filter(is_active=True)

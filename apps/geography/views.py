@@ -5,7 +5,7 @@ from .serializer import CountrySerializer,RegionSerializer
 from common.permissions import *
 from rest_framework.decorators import action
 from rest_framework.response import Response
-from rest_framework.parsers import MultiPartParser, FormParser
+from rest_framework.parsers import MultiPartParser, FormParser,JSONParser
 from rest_framework import status
 import pandas as pd
 from django.db import transaction
@@ -14,7 +14,7 @@ class CountryViewSet(ModelViewSet):
     queryset = Country.objects.filter(deleted_at__isnull=True)
     serializer_class = CountrySerializer
     permission_classes = [IsSuperAdminOrAdminWriteElseReadOnly]
-    parser_classes = [MultiPartParser, FormParser]
+    parser_classes = [MultiPartParser, FormParser,JSONParser]
 
     @action(detail=False, methods=["post"], url_path="bulk-upload")
     def bulk_upload(self, request):
@@ -51,7 +51,7 @@ class CountryViewSet(ModelViewSet):
 class RegionViewSet(ModelViewSet):
     serializer_class = RegionSerializer
     permission_classes = [IsSuperAdminOrAdminWriteElseReadOnly]
-    parser_classes = [MultiPartParser, FormParser]
+    parser_classes = [MultiPartParser, FormParser,JSONParser]
 
     def get_queryset(self):
         qs = Region.objects.select_related("country")
