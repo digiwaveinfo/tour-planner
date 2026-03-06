@@ -17,7 +17,7 @@ from apps.attractions.models import Attraction
 
 class DayTourViewSet(ModelViewSet):
     serializer_class = DayTourSerializer
-    permission_classes = [IsAuthenticated, DayTourPermission]
+    permission_classes = [DayTourPermission]
     filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
     filterset_fields = ["region", "is_active", "created_by","travel_type",
     "validity_mode",]
@@ -31,6 +31,9 @@ class DayTourViewSet(ModelViewSet):
             deleted_at__isnull=True
         ).select_related("region", "created_by")\
          .prefetch_related("tour_attractions__attraction")
+
+        if not user or not user.is_authenticated:
+            return base_queryset
 
         if user.role == UserRoletype.SUPER_ADMIN:
             return base_queryset

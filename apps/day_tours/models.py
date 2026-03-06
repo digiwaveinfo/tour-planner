@@ -9,7 +9,7 @@ class DayTour(models.Model):
  id=models.BigAutoField(primary_key=True)
  region=models.ForeignKey(Region,on_delete=models.CASCADE,related_name="day_tours")
  unique_code=models.CharField(max_length=20,unique=True)
- travel_type = models.CharField(max_length=20,null=True,blank=True)
+ travel_type = models.CharField(max_length=20,choices=TravelType.CHOICES,null=True,blank=True)
  validity_mode = models.CharField(max_length=20,null=True,blank=True)
  valid_from = models.DateField(null=True, blank=True)
  valid_to = models.DateField(null=True, blank=True)
