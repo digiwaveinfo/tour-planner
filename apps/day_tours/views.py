@@ -16,7 +16,7 @@ class DayTourViewSet(ModelViewSet):
     serializer_class = DayTourSerializer
     permission_classes = [DayTourPermission]
     filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
-    filterset_fields = ["region", "is_active", "created_by","travel_type",
+    filterset_fields = ["region", "is_active", "created_by",
     "validity_mode",]
     search_fields = ["unique_code","activity_combination","overnight_location","itinerary_text"]
     ordering_fields = ["display_order", "created_at"]

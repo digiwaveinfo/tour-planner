@@ -1,5 +1,5 @@
 from django.db import models
-from apps.geography.models import Country
+from apps.geography.models import Country, Region
 from apps.account.models import User
 from apps.day_tours.models import DayTour
 from apps.inclusions.models import InclusionExclusion
@@ -14,10 +14,14 @@ class ItineraryTemplate(models.Model):
 
  id=models.BigAutoField(primary_key=True)
  country=models.ForeignKey(Country,on_delete=models.CASCADE,related_name="templates")
+ region=models.ForeignKey(Region,on_delete=models.SET_NULL,null=True,blank=True,related_name="templates",help_text="City/region this single-day template belongs to.")
  name=models.CharField(max_length=200)
  code=models.CharField(max_length=30,unique=True,null=True,blank=True)
- total_nights=models.IntegerField()
- total_days=models.IntegerField()
+ # For single-day templates total_days is always 1; total_nights is 0 or 1 (set by save())
+ total_nights=models.IntegerField(default=0)
+ total_days=models.IntegerField(default=1)
+ # Admin sets this: True = Day + Night stay; False = Day tour only
+ includes_night=models.BooleanField(default=False,help_text="If True, this template includes an overnight stay (1D/1N). If False, it is a day tour only (1D/0N).")
  travel_type=models.CharField(max_length=10,choices=TRAVEL_TYPE_CHOICES,null=True,blank=True)
  description=models.TextField(null=True,blank=True)
  is_default = models.BooleanField(default=False)
@@ -29,16 +33,23 @@ class ItineraryTemplate(models.Model):
 
  class Meta:
   db_table="itinerary_templates"
-  constraints = [
-    models.UniqueConstraint(
-        fields=["country","total_days"],
-        condition=Q(is_default=True),
-        name="unique_default_template_per_country_days"
-    )
-]
+  constraints=[
+   models.UniqueConstraint(
+    fields=["region"],
+    condition=Q(is_default=True,region__isnull=False),
+    name="unique_default_template_per_region"
+   ),
+  ]
   indexes=[
    models.Index(fields=["country","is_active","created_by"]),
+   models.Index(fields=["region","is_default","is_active"]),
   ]
+
+ def save(self,*args,**kwargs):
+  """Always single-day: enforce total_days=1 and derive total_nights from includes_night."""
+  self.total_days=1
+  self.total_nights=1 if self.includes_night else 0
+  super().save(*args,**kwargs)
 
  def __str__(self):
   return self.name
@@ -47,7 +58,7 @@ class ItineraryTemplateDay(models.Model):
  id=models.BigAutoField(primary_key=True)
  template=models.ForeignKey(ItineraryTemplate,on_delete=models.CASCADE,related_name="days")
  day_number=models.IntegerField()
- day_tour=models.ForeignKey(DayTour,on_delete=models.PROTECT,related_name="template_days")
+ day_tour=models.ForeignKey(DayTour,on_delete=models.SET_NULL,null=True,blank=True,related_name="template_days")
  custom_notes=models.TextField(null=True,blank=True)
  is_arrival_day=models.BooleanField(default=False)
  is_departure_day=models.BooleanField(default=False)

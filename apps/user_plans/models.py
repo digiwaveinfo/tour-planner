@@ -1,6 +1,6 @@
 from django.db import models
 from apps.account.models import User
-from apps.geography.models import Country
+from apps.geography.models import Country, Region
 from apps.itinerary_templates.models import ItineraryTemplate
 from apps.day_tours.models import DayTour
 from apps.inclusions.models import InclusionExclusion
@@ -40,7 +40,11 @@ class UserPlanDay(models.Model):
  id=models.BigAutoField(primary_key=True)
  user_plan=models.ForeignKey(UserPlan,on_delete=models.CASCADE,related_name="days")
  day_number=models.IntegerField()
- day_tour=models.ForeignKey(DayTour,on_delete=models.PROTECT,related_name="plan_days")
+ # City/region for this day — used to group days by city in the itinerary view
+ region=models.ForeignKey(Region,on_delete=models.SET_NULL,null=True,blank=True,related_name="plan_days")
+ # Template loaded for this day — user can swap it from the itinerary page
+ template=models.ForeignKey(ItineraryTemplate,on_delete=models.SET_NULL,null=True,blank=True,related_name="plan_days_using")
+ day_tour=models.ForeignKey(DayTour,on_delete=models.SET_NULL,null=True,blank=True,related_name="plan_days")
  custom_itinerary_text=models.TextField(null=True,blank=True)
  notes=models.TextField(null=True,blank=True)
  created_at=models.DateTimeField(auto_now_add=True)

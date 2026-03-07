@@ -7,10 +7,12 @@ from .models import (
 from .serializer import *
 from rest_framework.decorators import action
 from rest_framework.response import Response
+from rest_framework import status
 from common.permissions import DayTourPermission
 from django.db import transaction
 from django.db.models import Q
 import secrets
+
 
 class ItineraryTemplateViewSet(ModelViewSet):
     queryset = ItineraryTemplate.objects.all()
@@ -23,12 +25,17 @@ class ItineraryTemplateViewSet(ModelViewSet):
         ).prefetch_related(
             "days__day_tour__tour_attractions__attraction",
             "incl_excl__incl_excl__category",
-        ).select_related("country")
+        ).select_related("country", "region")
+
         country = self.request.query_params.get("country")
+        region = self.request.query_params.get("region")
         total_days = self.request.query_params.get("total_days")
         travel_type = self.request.query_params.get("travel_type")
+
         if country:
             queryset = queryset.filter(country_id=country)
+        if region:
+            queryset = queryset.filter(region_id=region)
         if total_days:
             queryset = queryset.filter(total_days=total_days)
 
@@ -39,7 +46,6 @@ class ItineraryTemplateViewSet(ModelViewSet):
             )
             if typed_qs.exists():
                 queryset = typed_qs
-            # else: keep the full queryset (show all templates)
 
         queryset = queryset.order_by("-is_default", "id")
         return queryset
@@ -75,13 +81,33 @@ class ItineraryTemplateViewSet(ModelViewSet):
     def perform_create(self, serializer):
         with transaction.atomic():
             generated_code = self._generate_code()
-            serializer.save(created_by=self.request.user,code=generated_code)
+            serializer.save(created_by=self.request.user, code=generated_code)
+
+    @action(detail=True, methods=["post"])
+    def set_as_default(self, request, pk=None):
+        """
+        Mark this template as the default for its region.
+        Clears the previous default for that region first.
+        """
+        template = self.get_object()
+        if not template.region_id:
+            return Response(
+                {"error": "Template must have a region assigned to be set as default."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        with transaction.atomic():
+            # Clear existing default for this region
+            ItineraryTemplate.objects.filter(
+                region=template.region, is_default=True
+            ).exclude(pk=template.pk).update(is_default=False)
+            template.is_default = True
+            template.save(update_fields=["is_default"])
+        return Response({"is_default": True})
 
     @action(detail=True, methods=["post"])
     def add_day(self, request, pk=None):
         template = self.get_object()
         day_number = request.data.get("day_number")
-        # If this day_number already exists for the template, update it
         existing = ItineraryTemplateDayModel.objects.filter(
             template=template, day_number=day_number
         ).first()
@@ -100,22 +126,17 @@ class ItineraryTemplateViewSet(ModelViewSet):
         template = self.get_object()
         incl_id = request.data.get("incl_excl")
         obj, created = ItineraryTemplateInclExcl.objects.get_or_create(
-            template=template,incl_excl_id=incl_id)
+            template=template, incl_excl_id=incl_id)
+        return Response({"attached": created})
 
-        return Response({
-            "attached": created
-        })    
-    
     @action(detail=True, methods=["post"])
     def remove_inclusion(self, request, pk=None):
         template = self.get_object()
         incl_id = request.data.get("incl_excl")
         deleted, _ = ItineraryTemplateInclExcl.objects.filter(
-            template=template,incl_excl_id=incl_id).delete()
+            template=template, incl_excl_id=incl_id).delete()
+        return Response({"deleted": deleted})
 
-        return Response({
-            "deleted": deleted
-        })
 
 class ItineraryTemplateDayViewSet(ModelViewSet):
     queryset = ItineraryTemplateDayModel.objects.all()
@@ -128,6 +149,7 @@ class ItineraryTemplateDayViewSet(ModelViewSet):
         if template:
             qs = qs.filter(template_id=template)
         return qs.order_by("day_number")
+
 
 class ItineraryTemplateInclExclViewSet(ModelViewSet):
     queryset = ItineraryTemplateInclExcl.objects.all()

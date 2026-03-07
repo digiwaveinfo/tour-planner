@@ -13,13 +13,7 @@ class ItineraryTemplateDaySerializer(serializers.ModelSerializer):
         }
 
     def validate(self, data):
-      template = data.get("template") or getattr(self.instance, "template", None)
-      day_number = data.get("day_number") or getattr(self.instance, "day_number", None)
-      if template and day_number:
-          if day_number > template.total_days:
-              raise serializers.ValidationError(
-                  f"Day {day_number} exceeds template max {template.total_days}"
-              )
+      # No cross-field validation needed for single-day templates
       return data
 
 class ItineraryTemplateInclExclSerializer(serializers.ModelSerializer):
@@ -34,7 +28,8 @@ class ItineraryTemplateSerializer(serializers.ModelSerializer):
  days = ItineraryTemplateDaySerializer(many=True, read_only=True)
  incl_excl = ItineraryTemplateInclExclSerializer(many=True, read_only=True)
  country_name = serializers.CharField(source="country.name", read_only=True)
+ region_name = serializers.CharField(source="region.name", read_only=True, default=None)
  class Meta:
   model=ItineraryTemplate
   fields="__all__"
-  read_only_fields=("created_by","created_at","updated_at","deleted_at","code",)
+  read_only_fields=("created_by","created_at","updated_at","deleted_at","code","total_days","total_nights")
