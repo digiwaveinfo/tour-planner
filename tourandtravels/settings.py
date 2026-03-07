@@ -157,7 +157,7 @@ REST_FRAMEWORK = {
     ),
     "DEFAULT_PAGINATION_CLASS":
         "rest_framework.pagination.PageNumberPagination",
-
+    "EXCEPTION_HANDLER": "tourandtravels.utils.custom_exception_handler",
     "PAGE_SIZE": 30,
     "DEFAULT_FILTER_BACKENDS": [
         "django_filters.rest_framework.DjangoFilterBackend"
@@ -182,3 +182,22 @@ CORS_ALLOW_CREDENTIALS = True
 
 MEDIA_URL = "/media/"
 MEDIA_ROOT = os.path.join(BASE_DIR, "media")
+
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'handlers': {
+        'file': {
+            'level': 'ERROR',
+            'class': 'logging.FileHandler',
+            'filename': os.path.join(BASE_DIR, 'django_errors.log'),
+        },
+    },
+    'loggers': {
+        'django': {
+            'handlers': ['file'],
+            'level': 'ERROR',
+            'propagate': True,
+        },
+    },
+}

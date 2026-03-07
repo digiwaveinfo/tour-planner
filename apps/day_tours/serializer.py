@@ -16,11 +16,6 @@ class DayTourSerializer(serializers.ModelSerializer):
         model = DayTour
         fields = "__all__"
         read_only_fields = ("id","created_by","created_at","updated_at","deleted_at","unique_code")
-
-    def validate_travel_type(self, value):
-        if value and value not in dict(TravelType.CHOICES):
-            raise serializers.ValidationError("Invalid travel type")
-        return value
     
     def validate(self, data):
         validity_mode = data.get("validity_mode")
