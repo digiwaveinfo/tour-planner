@@ -196,16 +196,19 @@ class UserPlanViewSet(ModelViewSet):
     @action(detail=True, methods=["get"])
     def export_pdf(self, request, pk=None):
         """
-        Export a plan as a PDF using reportlab (pure Python, no native dependencies).
-        Returns a PDF file download.
+        Export a beautifully formatted plan PDF with itinerary, pricing,
+        inclusions/exclusions and terms & conditions.
         """
         try:
             from reportlab.lib.pagesizes import A4
             from reportlab.lib import colors
             from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
             from reportlab.lib.units import mm
-            from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, HRFlowable
-            from reportlab.lib.enums import TA_CENTER, TA_LEFT
+            from reportlab.platypus import (
+                SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle,
+                HRFlowable, KeepTogether, PageBreak,
+            )
+            from reportlab.lib.enums import TA_CENTER, TA_LEFT, TA_RIGHT
         except ImportError:
             return Response(
                 {"error": "reportlab is not installed. Run: pip install reportlab"},
@@ -213,72 +216,333 @@ class UserPlanViewSet(ModelViewSet):
             )
 
         plan = self.get_object()
+        serializer = UserPlanSerializer(plan)
+        plan_data = serializer.data
         buffer = io.BytesIO()
-        doc = SimpleDocTemplate(buffer, pagesize=A4, rightMargin=20*mm, leftMargin=20*mm, topMargin=20*mm, bottomMargin=20*mm)
-        styles = getSampleStyleSheet()
 
-        title_style = ParagraphStyle("Title", parent=styles["Heading1"], fontSize=20, spaceAfter=4, textColor=colors.HexColor("#1e293b"))
-        sub_style = ParagraphStyle("Sub", parent=styles["Normal"], fontSize=11, textColor=colors.HexColor("#64748b"), spaceAfter=12)
-        section_style = ParagraphStyle("Section", parent=styles["Heading2"], fontSize=13, spaceBefore=14, spaceAfter=6, textColor=colors.HexColor("#4f46e5"))
-        body_style = ParagraphStyle("Body", parent=styles["Normal"], fontSize=10, leading=14, textColor=colors.HexColor("#334155"))
+        # ── colours ──
+        BRAND   = colors.HexColor("#4f46e5")
+        BRAND_L = colors.HexColor("#eef2ff")
+        DARK    = colors.HexColor("#1e293b")
+        MID     = colors.HexColor("#475569")
+        LIGHT   = colors.HexColor("#94a3b8")
+        BORDER  = colors.HexColor("#e2e8f0")
+        BG_EVEN = colors.HexColor("#f8fafc")
+        WHITE   = colors.white
+        GREEN   = colors.HexColor("#16a34a")
+        GREEN_L = colors.HexColor("#f0fdf4")
+        RED     = colors.HexColor("#dc2626")
+        RED_L   = colors.HexColor("#fef2f2")
+        CITY_PALETTE = [
+            colors.HexColor("#4f46e5"), colors.HexColor("#e11d48"),
+            colors.HexColor("#d97706"), colors.HexColor("#059669"),
+            colors.HexColor("#0284c7"), colors.HexColor("#7c3aed"),
+        ]
+
+        page_w = A4[0] - 40 * mm          # usable width
+        col_full = page_w
+
+        # ── styles ──
+        styles = getSampleStyleSheet()
+        S = lambda name, **kw: ParagraphStyle(name, parent=styles["Normal"], **kw)
+
+        s_title    = S("t", fontSize=22, leading=26, textColor=DARK, fontName="Helvetica-Bold")
+        s_subtitle = S("st", fontSize=11, leading=15, textColor=MID)
+        s_section  = S("sec", fontSize=14, leading=18, textColor=BRAND, fontName="Helvetica-Bold", spaceBefore=16, spaceAfter=6)
+        s_body     = S("bd", fontSize=9.5, leading=13, textColor=DARK)
+        s_body_sm  = S("bsm", fontSize=8.5, leading=12, textColor=MID)
+        s_body_b   = S("bb", fontSize=9.5, leading=13, textColor=DARK, fontName="Helvetica-Bold")
+        s_white_b  = S("wb", fontSize=10, leading=14, textColor=WHITE, fontName="Helvetica-Bold")
+        s_center   = S("ctr", fontSize=9, leading=12, textColor=MID, alignment=TA_CENTER)
+        s_right_b  = S("rb", fontSize=10, leading=14, textColor=DARK, fontName="Helvetica-Bold", alignment=TA_RIGHT)
+        s_terms    = S("trm", fontSize=8, leading=11, textColor=MID)
+        s_city_h   = S("ch", fontSize=11, leading=14, textColor=WHITE, fontName="Helvetica-Bold")
+        s_brand_sm = S("brsm", fontSize=9, leading=12, textColor=BRAND, fontName="Helvetica-Bold")
 
         story = []
-        story.append(Paragraph(f"Itinerary: {plan.name}", title_style))
-        story.append(Paragraph(f"Plan # {plan.plan_number} &nbsp;&bull;&nbsp; {plan.total_days} Days / {plan.total_nights} Nights &nbsp;&bull;&nbsp; Status: {plan.status}", sub_style))
+
+        # ──────────────── HEADER ────────────────
+        country_name = plan_data.get("country_name", "")
+
+        story.append(Paragraph("Tour Planner", S("brand", fontSize=10, textColor=BRAND, fontName="Helvetica-Bold")))
+        story.append(Spacer(1, 2 * mm))
+        story.append(Paragraph(f"{plan.name}", s_title))
+        story.append(Spacer(1, 2 * mm))
+
+        meta_parts = []
+        if plan.plan_number:
+            meta_parts.append(f"<b>Plan #</b> {plan.plan_number}")
+        meta_parts.append(f"<b>{plan.total_days} Days / {plan.total_nights} Nights</b>")
+        if country_name:
+            meta_parts.append(f"<b>{country_name}</b>")
         if plan.start_date:
-            story.append(Paragraph(f"Start Date: {plan.start_date}", sub_style))
-        story.append(HRFlowable(width="100%", thickness=1, color=colors.HexColor("#e2e8f0"), spaceAfter=10))
+            meta_parts.append(f"Starting {plan.start_date.strftime('%d %b %Y')}")
+        story.append(Paragraph(" &nbsp;&bull;&nbsp; ".join(meta_parts), s_subtitle))
+        story.append(Spacer(1, 2 * mm))
 
-        # City groups
-        serializer = UserPlanSerializer(plan)
-        city_groups = serializer.data.get("city_groups", [])
+        if plan.client_name:
+            story.append(Paragraph(f"<b>Guest:</b> {plan.client_name}" + (f" &nbsp;|&nbsp; {plan.client_email}" if plan.client_email else ""), s_body_sm))
+
+        story.append(Spacer(1, 3 * mm))
+        story.append(HRFlowable(width="100%", thickness=1.5, color=BRAND, spaceAfter=8))
+
+        # ──────────────── ROUTE OVERVIEW ────────────────
+        city_groups = plan_data.get("city_groups", [])
         if city_groups:
-            story.append(Paragraph("Cities Overview", section_style))
-            city_data = [["City", "Days"]]
-            for g in city_groups:
-                city_data.append([g["region_name"], f"{g['days_count']} day(s)"])
-            t = Table(city_data, colWidths=[120*mm, 50*mm])
-            t.setStyle(TableStyle([
-                ("BACKGROUND", (0,0), (-1,0), colors.HexColor("#4f46e5")),
-                ("TEXTCOLOR", (0,0), (-1,0), colors.white),
-                ("FONTNAME", (0,0), (-1,0), "Helvetica-Bold"),
-                ("FONTSIZE", (0,0), (-1,-1), 10),
-                ("ROWBACKGROUNDS", (0,1), (-1,-1), [colors.HexColor("#f8fafc"), colors.white]),
-                ("GRID", (0,0), (-1,-1), 0.5, colors.HexColor("#e2e8f0")),
-                ("TOPPADDING", (0,0), (-1,-1), 6),
-                ("BOTTOMPADDING", (0,0), (-1,-1), 6),
-            ]))
-            story.append(t)
-            story.append(Spacer(1, 10))
-
-        # Day-by-day itinerary
-        story.append(Paragraph("Day-by-Day Itinerary", section_style))
-        sorted_days = sorted(plan.days.all(), key=lambda d: d.day_number)
-        for day in sorted_days:
-            region_label = day.region.name if day.region else ""
-            tmpl_label = day.template.name if day.template else ""
-            tour_text = day.day_tour.activity_combination if day.day_tour else "—"
-            notes = day.day_tour.itinerary_text if day.day_tour else ""
-
-            day_data = [
-                [Paragraph(f"<b>Day {day.day_number}</b>", body_style), Paragraph(f"<b>{region_label}</b>", body_style)],
-                [Paragraph(tour_text, body_style), Paragraph(tmpl_label, body_style)],
+            story.append(Paragraph("Route Overview", s_section))
+            route_data = [
+                [Paragraph("<b>City</b>", s_white_b),
+                 Paragraph("<b>Nights</b>", s_white_b),
+                 Paragraph("<b>Days</b>", s_white_b)],
             ]
-            if notes:
-                day_data.append([Paragraph(notes, ParagraphStyle("notes", parent=body_style, textColor=colors.HexColor("#64748b"))), ""])
-
-            t = Table(day_data, colWidths=[100*mm, 70*mm])
+            for i, g in enumerate(city_groups):
+                day_nums = g.get("day_numbers", [])
+                day_range = f"Day {day_nums[0]}–{day_nums[-1]}" if len(day_nums) > 1 else f"Day {day_nums[0]}"
+                route_data.append([
+                    Paragraph(f"● {g['region_name']}", s_body_b),
+                    Paragraph(str(g["days_count"]), s_body),
+                    Paragraph(day_range, s_body),
+                ])
+            t = Table(route_data, colWidths=[col_full * 0.50, col_full * 0.20, col_full * 0.30])
             t.setStyle(TableStyle([
-                ("BACKGROUND", (0,0), (-1,0), colors.HexColor("#f1f5f9")),
-                ("FONTNAME", (0,0), (-1,0), "Helvetica-Bold"),
-                ("GRID", (0,0), (-1,-1), 0.5, colors.HexColor("#e2e8f0")),
-                ("TOPPADDING", (0,0), (-1,-1), 5),
-                ("BOTTOMPADDING", (0,0), (-1,-1), 5),
-                ("SPAN", (0,2), (-1,2)),
+                ("BACKGROUND", (0, 0), (-1, 0), BRAND),
+                ("TEXTCOLOR", (0, 0), (-1, 0), WHITE),
+                ("ROWBACKGROUNDS", (0, 1), (-1, -1), [WHITE, BG_EVEN]),
+                ("GRID", (0, 0), (-1, -1), 0.5, BORDER),
+                ("TOPPADDING", (0, 0), (-1, -1), 6),
+                ("BOTTOMPADDING", (0, 0), (-1, -1), 6),
+                ("LEFTPADDING", (0, 0), (-1, -1), 8),
+                ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
             ]))
             story.append(t)
-            story.append(Spacer(1, 4))
+            story.append(Spacer(1, 6 * mm))
 
+        # ──────────────── CITY-GROUPED ITINERARY ────────────────
+        story.append(Paragraph("Day-by-Day Itinerary", s_section))
+        story.append(Spacer(1, 2 * mm))
+
+        sorted_days = sorted(plan.days.select_related(
+            "region", "template", "day_tour"
+        ).prefetch_related("day_tour__tour_attractions__attraction").all(), key=lambda d: d.day_number)
+
+        # Build city groups from actual day objects
+        groups = []
+        for day in sorted_days:
+            rid = day.region_id
+            rname = day.region.name if day.region else "Unknown"
+            if groups and groups[-1]["region_id"] == rid:
+                groups[-1]["days"].append(day)
+            else:
+                groups.append({"region_id": rid, "region_name": rname, "days": [day]})
+
+        for gi, group in enumerate(groups):
+            city_color = CITY_PALETTE[gi % len(CITY_PALETTE)]
+            city_bg = colors.HexColor("#f1f5f9")
+            nights = len(group["days"])
+
+            # City header row
+            city_header_data = [[
+                Paragraph(f"{group['region_name']}  —  {nights} {'Night' if nights == 1 else 'Nights'}", s_city_h)
+            ]]
+            city_t = Table(city_header_data, colWidths=[col_full])
+            city_t.setStyle(TableStyle([
+                ("BACKGROUND", (0, 0), (-1, -1), city_color),
+                ("TOPPADDING", (0, 0), (-1, -1), 8),
+                ("BOTTOMPADDING", (0, 0), (-1, -1), 8),
+                ("LEFTPADDING", (0, 0), (-1, -1), 10),
+                ("ROUNDEDCORNERS", [6, 6, 0, 0]),
+            ]))
+
+            # Day rows within this city
+            day_rows = []
+            for day in group["days"]:
+                tour = day.day_tour
+                region_label = day.region.name if day.region else ""
+                activity = tour.activity_combination if tour else "Free Day"
+                notes = tour.itinerary_text if tour else ""
+
+                # Attractions
+                attractions_list = []
+                if tour:
+                    for ta in tour.tour_attractions.all().order_by("visit_order"):
+                        attractions_list.append(f"{ta.visit_order}. {ta.attraction.name}")
+
+                price_str = ""
+                if tour and tour.price and tour.price > 0:
+                    price_str = f"{tour.currency or 'INR'} {tour.price:,.0f}"
+
+                # Build multi-line day cell
+                parts = [f"<b>Day {day.day_number}</b> &nbsp; <font color='#94a3b8'>|</font> &nbsp; <b>{activity}</b>"]
+                if notes:
+                    parts.append(f"<br/><font size='8' color='#64748b'>{notes[:300]}</font>")
+                if attractions_list:
+                    parts.append(f"<br/><font size='8' color='#4f46e5'>{'  •  '.join(attractions_list)}</font>")
+
+                meta_bits = []
+                if tour and tour.est_time_distance:
+                    meta_bits.append(f"⏱ {tour.est_time_distance}")
+                if tour and tour.overnight_location:
+                    meta_bits.append(f"🏨 {tour.overnight_location}")
+                if meta_bits:
+                    parts.append(f"<br/><font size='7' color='#94a3b8'>{'  |  '.join(meta_bits)}</font>")
+
+                day_rows.append([
+                    Paragraph("".join(parts), s_body),
+                    Paragraph(price_str, s_right_b),
+                ])
+
+            day_table = Table(day_rows, colWidths=[col_full * 0.78, col_full * 0.22])
+            day_table.setStyle(TableStyle([
+                ("ROWBACKGROUNDS", (0, 0), (-1, -1), [WHITE, BG_EVEN]),
+                ("GRID", (0, 0), (-1, -1), 0.5, BORDER),
+                ("TOPPADDING", (0, 0), (-1, -1), 7),
+                ("BOTTOMPADDING", (0, 0), (-1, -1), 7),
+                ("LEFTPADDING", (0, 0), (0, -1), 10),
+                ("VALIGN", (0, 0), (-1, -1), "TOP"),
+            ]))
+
+            story.append(KeepTogether([city_t, day_table]))
+            story.append(Spacer(1, 5 * mm))
+
+        # ──────────────── PRICING SUMMARY ────────────────
+        story.append(Paragraph("Pricing Summary", s_section))
+        price_rows = [
+            [Paragraph("<b>Day</b>", s_white_b),
+             Paragraph("<b>Activity</b>", s_white_b),
+             Paragraph("<b>City</b>", s_white_b),
+             Paragraph("<b>Amount</b>", s_white_b)],
+        ]
+        grand_total = 0
+        for day in sorted_days:
+            tour = day.day_tour
+            price_val = float(tour.price) if tour and tour.price else 0
+            grand_total += price_val
+            currency = tour.currency if tour else "INR"
+            price_rows.append([
+                Paragraph(f"Day {day.day_number}", s_body),
+                Paragraph(tour.activity_combination if tour else "—", s_body),
+                Paragraph(day.region.name if day.region else "—", s_body),
+                Paragraph(f"{currency or 'INR'} {price_val:,.0f}" if price_val > 0 else "—", s_body),
+            ])
+        # Total row
+        price_rows.append([
+            Paragraph("", s_body), Paragraph("", s_body),
+            Paragraph("<b>Grand Total</b>", s_body_b),
+            Paragraph(f"<b>INR {grand_total:,.0f}</b>", S("gt", fontSize=11, textColor=BRAND, fontName="Helvetica-Bold", alignment=TA_RIGHT)),
+        ])
+
+        pt = Table(price_rows, colWidths=[col_full * 0.12, col_full * 0.40, col_full * 0.23, col_full * 0.25])
+        pt.setStyle(TableStyle([
+            ("BACKGROUND", (0, 0), (-1, 0), BRAND),
+            ("TEXTCOLOR", (0, 0), (-1, 0), WHITE),
+            ("ROWBACKGROUNDS", (0, 1), (-1, -2), [WHITE, BG_EVEN]),
+            ("BACKGROUND", (0, -1), (-1, -1), BRAND_L),
+            ("GRID", (0, 0), (-1, -1), 0.5, BORDER),
+            ("TOPPADDING", (0, 0), (-1, -1), 5),
+            ("BOTTOMPADDING", (0, 0), (-1, -1), 5),
+            ("LEFTPADDING", (0, 0), (-1, -1), 6),
+            ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+        ]))
+        story.append(pt)
+        story.append(Spacer(1, 8 * mm))
+
+        # ──────────────── INCLUSIONS / EXCLUSIONS ────────────────
+        incl_excl_qs = plan.incl_excl.select_related("incl_excl__category").all()
+        inclusions = [ie for ie in incl_excl_qs if ie.incl_excl.type == "INCLUSION"]
+        exclusions = [ie for ie in incl_excl_qs if ie.incl_excl.type == "EXCLUSION"]
+
+        if inclusions:
+            story.append(Paragraph("What's Included", s_section))
+            inc_rows = [[
+                Paragraph("<b>#</b>", s_white_b),
+                Paragraph("<b>Inclusion</b>", s_white_b),
+                Paragraph("<b>Category</b>", s_white_b),
+            ]]
+            for idx, ie in enumerate(inclusions, 1):
+                inc_rows.append([
+                    Paragraph(str(idx), s_body),
+                    Paragraph(ie.incl_excl.item_service, s_body),
+                    Paragraph(ie.incl_excl.category.name if ie.incl_excl.category else "", s_body_sm),
+                ])
+            it = Table(inc_rows, colWidths=[col_full * 0.08, col_full * 0.62, col_full * 0.30])
+            it.setStyle(TableStyle([
+                ("BACKGROUND", (0, 0), (-1, 0), GREEN),
+                ("TEXTCOLOR", (0, 0), (-1, 0), WHITE),
+                ("ROWBACKGROUNDS", (0, 1), (-1, -1), [WHITE, GREEN_L]),
+                ("GRID", (0, 0), (-1, -1), 0.5, BORDER),
+                ("TOPPADDING", (0, 0), (-1, -1), 5),
+                ("BOTTOMPADDING", (0, 0), (-1, -1), 5),
+                ("LEFTPADDING", (0, 0), (-1, -1), 6),
+                ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+            ]))
+            story.append(it)
+            story.append(Spacer(1, 5 * mm))
+
+        if exclusions:
+            story.append(Paragraph("What's Not Included", s_section))
+            exc_rows = [[
+                Paragraph("<b>#</b>", s_white_b),
+                Paragraph("<b>Exclusion</b>", s_white_b),
+                Paragraph("<b>Category</b>", s_white_b),
+            ]]
+            for idx, ie in enumerate(exclusions, 1):
+                exc_rows.append([
+                    Paragraph(str(idx), s_body),
+                    Paragraph(ie.incl_excl.item_service, s_body),
+                    Paragraph(ie.incl_excl.category.name if ie.incl_excl.category else "", s_body_sm),
+                ])
+            et = Table(exc_rows, colWidths=[col_full * 0.08, col_full * 0.62, col_full * 0.30])
+            et.setStyle(TableStyle([
+                ("BACKGROUND", (0, 0), (-1, 0), RED),
+                ("TEXTCOLOR", (0, 0), (-1, 0), WHITE),
+                ("ROWBACKGROUNDS", (0, 1), (-1, -1), [WHITE, RED_L]),
+                ("GRID", (0, 0), (-1, -1), 0.5, BORDER),
+                ("TOPPADDING", (0, 0), (-1, -1), 5),
+                ("BOTTOMPADDING", (0, 0), (-1, -1), 5),
+                ("LEFTPADDING", (0, 0), (-1, -1), 6),
+                ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+            ]))
+            story.append(et)
+            story.append(Spacer(1, 8 * mm))
+
+        # ──────────────── TERMS & CONDITIONS ────────────────
+        story.append(HRFlowable(width="100%", thickness=1, color=BORDER, spaceBefore=4, spaceAfter=8))
+        story.append(Paragraph("Terms & Conditions", s_section))
+
+        terms = [
+            "This is a quotation and not a confirmation of booking. Booking is confirmed only upon receipt of the advance payment and written confirmation.",
+            "All prices are per person and quoted in Indian Rupees (INR) unless stated otherwise. Prices are subject to change based on availability and currency fluctuations.",
+            "A minimum advance of 50% of the total cost is required to confirm the booking. The balance must be paid at least 15 days before the date of travel.",
+            "Standard hotel check-in time is 14:00 hrs and check-out time is 11:00 hrs. Early check-in and late check-out are subject to availability and may incur additional charges.",
+            "The itinerary is subject to change due to weather conditions, local regulations, or unforeseen circumstances. The company reserves the right to alter, amend, or cancel any part of the itinerary.",
+            "Cancellation charges apply as follows: 30+ days before departure — 25% of tour cost; 15–29 days — 50%; 7–14 days — 75%; Less than 7 days or no-show — 100%.",
+            "Travel insurance is strongly recommended but not included unless explicitly mentioned. The company shall not be liable for any loss, injury, or damage during the tour.",
+            "All disputes are subject to jurisdiction of the courts at the registered office of the company.",
+            "By accepting this quotation, the guest agrees to the above terms and conditions.",
+        ]
+        for i, term in enumerate(terms, 1):
+            story.append(Paragraph(f"<b>{i}.</b> {term}", s_terms))
+            story.append(Spacer(1, 1.5 * mm))
+
+        # ──────────────── FOOTER NOTE ────────────────
+        story.append(Spacer(1, 8 * mm))
+        story.append(HRFlowable(width="100%", thickness=0.5, color=BORDER, spaceAfter=6))
+        story.append(Paragraph(
+            "This itinerary has been prepared by <b>Tour Planner</b>. We hope you have a wonderful trip!",
+            s_center,
+        ))
+        story.append(Spacer(1, 2 * mm))
+        story.append(Paragraph(
+            f"Generated on {plan.updated_at.strftime('%d %b %Y')} &nbsp;|&nbsp; Plan #{plan.plan_number}",
+            S("foot", fontSize=7, textColor=LIGHT, alignment=TA_CENTER),
+        ))
+
+        # ── Build PDF ──
+        doc = SimpleDocTemplate(
+            buffer, pagesize=A4,
+            rightMargin=20 * mm, leftMargin=20 * mm,
+            topMargin=18 * mm, bottomMargin=18 * mm,
+        )
         doc.build(story)
         buffer.seek(0)
         response = HttpResponse(buffer, content_type="application/pdf")
