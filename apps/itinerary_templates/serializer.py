@@ -9,7 +9,7 @@ class ItineraryTemplateDaySerializer(serializers.ModelSerializer):
         model = ItineraryTemplateDay
         fields = "__all__"
         extra_kwargs = {
-            'template': {'required': False},
+            'template': {'required': False, 'allow_null': True},
         }
 
     def validate(self, data):

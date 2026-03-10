@@ -21,8 +21,12 @@ class ItineraryTemplateViewSet(ModelViewSet):
 
     def get_queryset(self):
         queryset = ItineraryTemplate.objects.filter(
-            deleted_at__isnull=True, is_active=True
-        ).prefetch_related(
+            deleted_at__isnull=True,
+        )
+        # Admin (staff) sees all templates; planner sees only active ones
+        if not self.request.user.is_staff:
+            queryset = queryset.filter(is_active=True)
+        queryset = queryset.prefetch_related(
             "days__day_tour__tour_attractions__attraction",
             "incl_excl__incl_excl__category",
         ).select_related("country", "region")
@@ -81,7 +85,25 @@ class ItineraryTemplateViewSet(ModelViewSet):
     def perform_create(self, serializer):
         with transaction.atomic():
             generated_code = self._generate_code()
-            serializer.save(created_by=self.request.user, code=generated_code)
+            # Clear other defaults BEFORE insert to respect unique constraint
+            region = serializer.validated_data.get('region')
+            is_default = serializer.validated_data.get('is_default', False)
+            if is_default and region:
+                ItineraryTemplate.objects.filter(
+                    region=region, is_default=True
+                ).update(is_default=False)
+            instance = serializer.save(created_by=self.request.user, code=generated_code)
+
+    def perform_update(self, serializer):
+        with transaction.atomic():
+            # Clear other defaults BEFORE save to respect unique constraint
+            is_default = serializer.validated_data.get('is_default', serializer.instance.is_default)
+            region = serializer.validated_data.get('region', serializer.instance.region)
+            if is_default and region:
+                ItineraryTemplate.objects.filter(
+                    region=region, is_default=True
+                ).exclude(pk=serializer.instance.pk).update(is_default=False)
+            serializer.save()
 
     @action(detail=True, methods=["post"])
     def set_as_default(self, request, pk=None):
@@ -116,7 +138,9 @@ class ItineraryTemplateViewSet(ModelViewSet):
                 existing, data=request.data, partial=True
             )
         else:
-            serializer = ItineraryTemplateDaySerializer(data=request.data)
+            serializer = ItineraryTemplateDaySerializer(
+                data=request.data, partial=True
+            )
         serializer.is_valid(raise_exception=True)
         serializer.save(template=template)
         return Response(serializer.data)
