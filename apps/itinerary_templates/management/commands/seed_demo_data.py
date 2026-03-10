@@ -457,11 +457,17 @@ IS_HOTELS = [
 # ──────────────────────────────────────────────────────────────────────────────
 
 def _code():
-    return "IT-" + str(secrets.randbelow(900000) + 100000)
+    while True:
+        code = "IT-" + str(secrets.randbelow(900000) + 100000)
+        if not ItineraryTemplate.objects.filter(code=code).exists():
+            return code
 
 
 def _dt_code(prefix):
-    return f"DT-{prefix}-{secrets.randbelow(9000) + 1000}"
+    while True:
+        code = f"DT-{prefix}-{secrets.randbelow(9000) + 1000}"
+        if not DayTour.objects.filter(unique_code=code).exists():
+            return code
 
 
 def _ie_code(prefix):
@@ -503,7 +509,7 @@ class Command(BaseCommand):
 
         self.stdout.write(self.style.SUCCESS(
             "\nDone!  Switzerland + Iceland | 30 regions each | "
-            "60 day tours | 180 templates (Solo/Couple/Group) | "
+            "5 day tours per region | 15 templates per region (5 Solo + 5 Couple + 5 Group) | "
             "inclusions & exclusions | ~40 hotels | INR currency\n"
         ))
 
@@ -599,7 +605,7 @@ class Command(BaseCommand):
                 defaults={"code": region_code, "description": desc, "display_order": i + 1, "is_active": True},
             )
 
-            # day tour
+            # Main day tour from data
             tour_info = tours_data.get(code)
             if tour_info:
                 tour_name, activity, timing, price = tour_info
@@ -609,19 +615,13 @@ class Command(BaseCommand):
                 timing = "Full day — approx 7 hrs"
                 price = 15000
 
-            day_tour = self._day_tour(
-                region=region,
-                activity=activity,
-                code=_dt_code(code),
-                text=(
-                    f"{timing}\n\nExplore {name} on this immersive day tour. "
-                    f"Your expert guide shares local stories and insider tips."
-                ),
-                timing=timing,
-                price=price,
+            main_tour = self._day_tour(
+                region=region, activity=activity, code=_dt_code(code),
+                text=f"{timing}\n\nExplore {name} on this immersive day tour. Your expert guide shares local stories and insider tips.",
+                timing=timing, price=price,
             )
 
-            # parse activity bullets into attractions
+            # Parse activity bullets into attractions for main tour
             for idx, attr_name in enumerate(a.strip() for a in activity.split("•") if a.strip()):
                 attr, _ = Attraction.objects.get_or_create(
                     region=region, name=attr_name[:200],
@@ -632,55 +632,124 @@ class Command(BaseCommand):
                     },
                 )
                 DayTourAttraction.objects.get_or_create(
-                    day_tour=day_tour, attraction=attr,
+                    day_tour=main_tour, attraction=attr,
                     defaults={"visit_order": idx + 1},
                 )
 
-            # ── 3 templates per region ──────────────────────────────────
+            # ── Create variant day tours for richer template options ──
 
-            # 1) Solo Day Tour (default)
-            if not ItineraryTemplate.objects.filter(region=region, is_default=True).exists():
-                t1, _ = ItineraryTemplate.objects.get_or_create(
-                    region=region, name=f"{name} — Solo Day Tour",
+            # Parse main attractions for sub-combinations
+            all_attrs = [a.strip() for a in activity.split("•") if a.strip()]
+
+            variant_tours = [main_tour]  # index 0 = main tour
+
+            # Variant 1: Morning Half-Day (first 2 attractions)
+            if len(all_attrs) >= 2:
+                morning_acts = " • ".join(all_attrs[:2])
+                vt1 = self._day_tour(
+                    region=region, activity=morning_acts, code=_dt_code(f"{code}M"),
+                    text=f"Half day — approx 4 hrs\n\nMorning highlights of {name}. Perfect for a relaxed start.",
+                    timing="Half day — approx 4 hrs", price=int(price * 0.5),
+                )
+                for idx, attr_name in enumerate(all_attrs[:2]):
+                    attr = Attraction.objects.filter(region=region, name=attr_name[:200]).first()
+                    if attr:
+                        DayTourAttraction.objects.get_or_create(day_tour=vt1, attraction=attr, defaults={"visit_order": idx + 1})
+                variant_tours.append(vt1)
+
+            # Variant 2: Afternoon Half-Day (last 2 attractions)
+            if len(all_attrs) >= 3:
+                afternoon_acts = " • ".join(all_attrs[-2:])
+                vt2 = self._day_tour(
+                    region=region, activity=afternoon_acts, code=_dt_code(f"{code}A"),
+                    text=f"Half day — approx 4 hrs\n\nAfternoon exploration of {name}. Great for late risers.",
+                    timing="Half day — approx 4 hrs", price=int(price * 0.5),
+                )
+                for idx, attr_name in enumerate(all_attrs[-2:]):
+                    attr = Attraction.objects.filter(region=region, name=attr_name[:200]).first()
+                    if attr:
+                        DayTourAttraction.objects.get_or_create(day_tour=vt2, attraction=attr, defaults={"visit_order": idx + 1})
+                variant_tours.append(vt2)
+
+            # Variant 3: Full Day + Night (same attractions as main, higher price)
+            vt3 = self._day_tour(
+                region=region,
+                activity=activity + " • Evening Leisure",
+                code=_dt_code(f"{code}N"),
+                text=f"Full day + night — approx 12 hrs\n\nComplete {name} experience with overnight stay. Includes evening free time.",
+                timing="Full day + night — approx 12 hrs",
+                price=int(price * 1.6),
+                includes_night=True,
+            )
+            for idx, attr_name in enumerate(all_attrs):
+                attr = Attraction.objects.filter(region=region, name=attr_name[:200]).first()
+                if attr:
+                    DayTourAttraction.objects.get_or_create(day_tour=vt3, attraction=attr, defaults={"visit_order": idx + 1})
+            ev_attr, _ = Attraction.objects.get_or_create(
+                region=region, name="Evening Leisure",
+                defaults={"reference_no": f"ATT-{region.code}-EV-{secrets.randbelow(9000) + 1000}", "key_features_notes": f"Free evening in {name}.", "is_active": True},
+            )
+            DayTourAttraction.objects.get_or_create(day_tour=vt3, attraction=ev_attr, defaults={"visit_order": len(all_attrs) + 1})
+            variant_tours.append(vt3)
+
+            # Variant 4: Express Tour (first attraction only, budget)
+            if len(all_attrs) >= 1:
+                vt4 = self._day_tour(
+                    region=region, activity=all_attrs[0], code=_dt_code(f"{code}X"),
+                    text=f"Express — approx 2 hrs\n\nQuick visit to the top highlight of {name}.",
+                    timing="Express — approx 2 hrs", price=int(price * 0.3),
+                )
+                attr = Attraction.objects.filter(region=region, name=all_attrs[0][:200]).first()
+                if attr:
+                    DayTourAttraction.objects.get_or_create(day_tour=vt4, attraction=attr, defaults={"visit_order": 1})
+                variant_tours.append(vt4)
+
+            # ── 15 templates per region (5 per travel type) ────────────
+
+            TEMPLATE_DEFS = [
+                # (suffix, travel_type, includes_night, is_default, tour_idx, desc_prefix)
+                # ── SOLO (5) ──
+                ("Solo Day Tour",           "SOLO",   False, True,  0, "Solo full-day exploration of"),
+                ("Solo Morning Tour",       "SOLO",   False, False, 1, "Solo morning highlights of"),
+                ("Solo Afternoon Tour",     "SOLO",   False, False, 2, "Solo afternoon exploration of"),
+                ("Solo Day & Night",        "SOLO",   True,  False, 3, "Solo day + overnight stay in"),
+                ("Solo Express Tour",       "SOLO",   False, False, 4, "Solo quick visit to the top spot of"),
+                # ── COUPLE (5) ──
+                ("Couple Day Tour",         "COUPLE", False, False, 0, "Couple full-day exploration of"),
+                ("Couple Morning Special",  "COUPLE", False, False, 1, "Couple morning experience in"),
+                ("Couple Afternoon Escape", "COUPLE", False, False, 2, "Couple afternoon getaway in"),
+                ("Couple Day & Night",      "COUPLE", True,  False, 3, "Romantic day + overnight stay in"),
+                ("Couple Express Tour",     "COUPLE", False, False, 4, "Quick couple visit to"),
+                # ── GROUP (5) ──
+                ("Group Day Tour",          "GROUP",  False, False, 0, "Group full-day tour of"),
+                ("Group Morning Tour",      "GROUP",  False, False, 1, "Group morning highlights of"),
+                ("Group Afternoon Tour",    "GROUP",  False, False, 2, "Group afternoon exploration of"),
+                ("Group Day & Night",       "GROUP",  True,  False, 3, "Group day + night experience in"),
+                ("Family Express Tour",     "GROUP",  False, False, 4, "Quick family-friendly visit to"),
+            ]
+
+            for suffix, travel_type, incl_night, is_default, tour_idx, desc_pre in TEMPLATE_DEFS:
+                # Clamp tour_idx to available variants
+                tidx = min(tour_idx, len(variant_tours) - 1)
+                tmpl_name = f"{name} — {suffix}"
+
+                if is_default and ItineraryTemplate.objects.filter(region=region, is_default=True).exists():
+                    is_default = False
+
+                tmpl, created = ItineraryTemplate.objects.get_or_create(
+                    region=region, name=tmpl_name,
                     defaults={
                         "country": country, "code": _code(),
-                        "includes_night": False, "is_default": True,
-                        "travel_type": "SOLO", "is_active": True,
-                        "description": f"Solo day exploration of {name}. Perfect for independent travellers.",
+                        "includes_night": incl_night, "is_default": is_default,
+                        "travel_type": travel_type, "is_active": True,
+                        "description": f"{desc_pre} {name}.",
                         "created_by": admin,
                     },
                 )
-                self._attach(t1, day_tour, incl_list, excl_list)
+                if created:
+                    self._attach(tmpl, variant_tours[tidx], incl_list, excl_list)
 
-            # 2) Couple Day & Night
-            t2, created = ItineraryTemplate.objects.get_or_create(
-                region=region, name=f"{name} — Couple Day & Night",
-                defaults={
-                    "country": country, "code": _code(),
-                    "includes_night": True, "is_default": False,
-                    "travel_type": "COUPLE", "is_active": True,
-                    "description": f"Romantic day + overnight stay in {name}. Includes evening leisure time.",
-                    "created_by": admin,
-                },
-            )
-            if created:
-                self._attach(t2, day_tour, incl_list, excl_list)
-
-            # 3) Group Day Tour
-            t3, created = ItineraryTemplate.objects.get_or_create(
-                region=region, name=f"{name} — Group Day Tour",
-                defaults={
-                    "country": country, "code": _code(),
-                    "includes_night": False, "is_default": False,
-                    "travel_type": "GROUP", "is_active": True,
-                    "description": f"Group day tour of {name}. Ideal for families and friends travelling together.",
-                    "created_by": admin,
-                },
-            )
-            if created:
-                self._attach(t3, day_tour, incl_list, excl_list)
-
-            self.stdout.write(f"    {name} — tour + 3 templates")
+            self.stdout.write(f"    {name} — {len(variant_tours)} tours + 15 templates")
 
     # ── HOTELS ──────────────────────────────────────────────────────────────
 
@@ -709,7 +778,7 @@ class Command(BaseCommand):
 
     # ── DAY TOUR ───────────────────────────────────────────────────────────
 
-    def _day_tour(self, region, activity, code, text, timing, price):
+    def _day_tour(self, region, activity, code, text, timing, price, includes_night=False):
         existing = DayTour.objects.filter(region=region, activity_combination=activity).first()
         if existing:
             return existing
@@ -732,7 +801,7 @@ class Command(BaseCommand):
                     code, region.id, activity,
                     text, timing.split("\n")[0],
                     0, True, "INR", price,
-                    False, False,
+                    includes_night, False,
                     now, now,
                 ],
             )
