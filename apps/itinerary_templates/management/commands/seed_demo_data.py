@@ -707,7 +707,7 @@ class Command(BaseCommand):
             count += 1
         self.stdout.write(f"  Hotels for {country.name}: {count}")
 
-    # ── DAY TOUR (raw SQL for legacy NOT NULL columns) ──────────────────────
+    # ── DAY TOUR ───────────────────────────────────────────────────────────
 
     def _day_tour(self, region, activity, code, text, timing, price):
         existing = DayTour.objects.filter(region=region, activity_combination=activity).first()

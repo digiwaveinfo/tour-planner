@@ -18,6 +18,8 @@ class DayTour(models.Model):
  overnight_location=models.CharField(max_length=150,null=True,blank=True)
  source_file=models.CharField(max_length=200,null=True,blank=True)
  itinerary_text=models.TextField()
+ includes_night=models.BooleanField(default=False,help_text="Whether this day tour includes an overnight stay.")
+ is_default=models.BooleanField(default=False,help_text="Default day tour for the region.")
  display_order=models.IntegerField(default=0)
  created_by=models.ForeignKey(User,on_delete=models.SET_NULL,null=True,blank=True,related_name="created_day_tours")
  is_active=models.BooleanField(default=True)
