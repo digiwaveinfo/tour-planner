@@ -19,6 +19,7 @@ class Hotel(models.Model):
  latitude=models.DecimalField(max_digits=10,decimal_places=7,null=True,blank=True)
  longitude=models.DecimalField(max_digits=10,decimal_places=7,null=True,blank=True)
  amenities=models.JSONField(null=True,blank=True)
+ price_per_night=models.DecimalField(max_digits=10,decimal_places=2,default=0,help_text="Numeric price per night for calculations")
  price_notes=models.CharField(max_length=255,null=True,blank=True)
  display_order=models.IntegerField(default=0)
  is_active=models.BooleanField(default=True)

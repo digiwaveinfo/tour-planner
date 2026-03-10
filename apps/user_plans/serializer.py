@@ -8,6 +8,9 @@ class UserPlanDaySerializer(serializers.ModelSerializer):
     template_name=serializers.CharField(source="template.name",read_only=True,default=None)
     includes_night=serializers.BooleanField(source="template.includes_night",read_only=True,default=False)
     day_tour_detail=DayTourSerializer(source="day_tour",read_only=True)
+    hotel_name=serializers.CharField(source="hotel.name",read_only=True,default=None)
+    hotel_star_rating=serializers.IntegerField(source="hotel.star_rating",read_only=True,default=None)
+    hotel_price_per_night=serializers.DecimalField(source="hotel.price_per_night",read_only=True,default=None,max_digits=10,decimal_places=2)
     class Meta:
         model=UserPlanDay
         fields="__all__"

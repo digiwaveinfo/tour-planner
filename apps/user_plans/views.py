@@ -322,7 +322,7 @@ class UserPlanViewSet(ModelViewSet):
         story.append(Spacer(1, 2 * mm))
 
         sorted_days = sorted(plan.days.select_related(
-            "region", "template", "day_tour"
+            "region", "template", "day_tour", "hotel"
         ).prefetch_related("day_tour__tour_attractions__attraction").all(), key=lambda d: d.day_number)
 
         # Build city groups from actual day objects

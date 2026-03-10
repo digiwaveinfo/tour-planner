@@ -4,6 +4,7 @@ from apps.geography.models import Country, Region
 from apps.itinerary_templates.models import ItineraryTemplate
 from apps.day_tours.models import DayTour
 from apps.inclusions.models import InclusionExclusion
+from apps.hotel.models import Hotel
 from common.constant import PLAN_STATUS
 
 class UserPlan(models.Model):
@@ -45,6 +46,7 @@ class UserPlanDay(models.Model):
  # Template loaded for this day — user can swap it from the itinerary page
  template=models.ForeignKey(ItineraryTemplate,on_delete=models.SET_NULL,null=True,blank=True,related_name="plan_days_using")
  day_tour=models.ForeignKey(DayTour,on_delete=models.SET_NULL,null=True,blank=True,related_name="plan_days")
+ hotel=models.ForeignKey(Hotel,on_delete=models.SET_NULL,null=True,blank=True,related_name="plan_days",help_text="Hotel for overnight stay on this day")
  custom_itinerary_text=models.TextField(null=True,blank=True)
  notes=models.TextField(null=True,blank=True)
  created_at=models.DateTimeField(auto_now_add=True)
