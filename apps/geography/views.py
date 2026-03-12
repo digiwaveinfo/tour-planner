@@ -19,7 +19,7 @@ class RegionViewSet(ModelViewSet):
     parser_classes = [MultiPartParser, FormParser]
 
     def get_queryset(self):
-        qs = Region.objects.select_related("country")
+        qs = Region.objects.select_related("country").filter(deleted_at__isnull=True)
         country_id = self.request.query_params.get("country")
         if country_id:
             qs = qs.filter(country_id=country_id)

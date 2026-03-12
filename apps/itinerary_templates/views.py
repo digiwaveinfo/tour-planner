@@ -31,10 +31,16 @@ class ItineraryTemplateViewSet(ModelViewSet):
             "incl_excl__incl_excl__category",
         ).select_related("country", "region")
 
+        search = self.request.query_params.get("search")
         country = self.request.query_params.get("country")
         region = self.request.query_params.get("region")
         total_days = self.request.query_params.get("total_days")
         travel_type = self.request.query_params.get("travel_type")
+
+        if search:
+            queryset = queryset.filter(
+                Q(name__icontains=search) | Q(code__icontains=search) | Q(region__name__icontains=search)
+            )
 
         if country:
             queryset = queryset.filter(country_id=country)
@@ -51,7 +57,7 @@ class ItineraryTemplateViewSet(ModelViewSet):
             if typed_qs.exists():
                 queryset = typed_qs
 
-        queryset = queryset.order_by("-is_default", "id")
+        queryset = queryset.order_by("-is_default", "-id")
         return queryset
 
     @action(detail=False, methods=["get"])
@@ -133,13 +139,16 @@ class ItineraryTemplateViewSet(ModelViewSet):
         existing = ItineraryTemplateDayModel.objects.filter(
             template=template, day_number=day_number
         ).first()
+        # Merge template into data so validation never fails on missing template
+        data = request.data.copy() if hasattr(request.data, 'copy') else dict(request.data)
+        data['template'] = template.id
         if existing:
             serializer = ItineraryTemplateDaySerializer(
-                existing, data=request.data, partial=True
+                existing, data=data, partial=True
             )
         else:
             serializer = ItineraryTemplateDaySerializer(
-                data=request.data, partial=True
+                data=data, partial=True
             )
         serializer.is_valid(raise_exception=True)
         serializer.save(template=template)
