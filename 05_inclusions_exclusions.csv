@@ -1,0 +1,74 @@
+country_code,unique_code,type,category,item_service,details_notes,source_files,display_order
+REQUIRED - Country code from 01_countries,REQUIRED - Unique identifier code (e.g. CHE-INC-001),REQUIRED - INCLUSION or EXCLUSION,REQUIRED - Category name (will be created if not exists),REQUIRED - Item or service name,OPTIONAL - Extra details or notes,OPTIONAL - Source reference file,OPTIONAL - Sort order (default 0)
+CHE,CHE-INC-001,INCLUSION,Accommodation,5-Star Hotel Accommodation,Luxury 5-star hotel throughout (twin/double sharing basis). All rooms are ensuite with breakfast included.,hotels_04.csv,1
+CHE,CHE-INC-002,INCLUSION,Accommodation,Hotel Taxes & Service Charges,All applicable hotel taxes and service charges included.,,,2
+CHE,CHE-INC-003,INCLUSION,Meals,Daily Breakfast,Continental/buffet breakfast at hotel every morning.,,,1
+CHE,CHE-INC-004,INCLUSION,Meals,Welcome Dinner,Welcome dinner at a local Swiss restaurant on day of arrival.,,,2
+CHE,CHE-INC-005,INCLUSION,Transport,Airport Transfers,Return airport transfers by private air-conditioned vehicle.,,,1
+CHE,CHE-INC-006,INCLUSION,Transport,All Surface Transfers,All inter-city transfers by private coach throughout the tour.,,,2
+CHE,CHE-INC-007,INCLUSION,Transport,Jungfraujoch Train Ticket,"Round-trip cogwheel train from Grindelwald/Lauterbrunnen to Jungfraujoch — Top of Europe (3454 m). Subject to availability and weather.",day_tours_07.csv,3
+CHE,CHE-INC-008,INCLUSION,Sightseeing,Mount Titlis Excursion,"Cable car ride to Mount Titlis (3239 m), including revolving cable car. Entrance to Ice Flyer chairlift.",,,4
+CHE,CHE-INC-009,INCLUSION,Sightseeing,Lake Geneva Boat Cruise,1-hour scenic boat cruise on Lake Geneva with panoramic Alps views.,,,5
+CHE,CHE-INC-010,INCLUSION,Sightseeing,Rhine Falls Visit,Visit to Rhine Falls (Europe's largest waterfall) in Schaffhausen.,,,6
+CHE,CHE-INC-011,INCLUSION,Guide & Assistance,English-Speaking Tour Manager,English-speaking tour manager throughout the entire journey.,,,1
+CHE,CHE-INC-012,INCLUSION,Guide & Assistance,24x7 Emergency Support,Round-the-clock emergency support contact number provided.,,,2
+CHE,CHE-EXC-001,EXCLUSION,Flights,International Airfare,International flights to/from Switzerland are not included.,,,1
+CHE,CHE-EXC-002,EXCLUSION,Meals,Lunches & Dinners (except welcome dinner),All lunches and dinners except the specified welcome dinner are on personal account.,,,2
+CHE,CHE-EXC-003,EXCLUSION,Insurance,Travel & Medical Insurance,Travel insurance and medical insurance are not included. Highly recommended.,,,3
+CHE,CHE-EXC-004,EXCLUSION,Personal Expenses,Personal Expenses & Tips,Expenses of personal nature — laundry, telephone calls, mini-bar, gratuities to guides/drivers — not included.,,,4
+CHE,CHE-EXC-005,EXCLUSION,Visa & Fees,Switzerland Schengen Visa,Schengen visa fees and documentation charges are not included.,,,5
+CHE,CHE-EXC-006,EXCLUSION,Optional Activities,Optional Excursions,Any optional excursions outside the stated itinerary are at additional cost.,,,6
+CHE,CHE-EXC-007,EXCLUSION,Sightseeing,Entry Fees Not Mentioned,Any entry fees to attractions not specifically listed in inclusions.,,,7
+FRA,FRA-INC-001,INCLUSION,Accommodation,4-Star Hotel Accommodation,Quality 4-star hotel on twin-sharing basis with daily breakfast.,,,1
+FRA,FRA-INC-002,INCLUSION,Accommodation,Hotel Taxes & Service Charges,All hotel taxes included in the package price.,,,2
+FRA,FRA-INC-003,INCLUSION,Meals,Daily Breakfast,Buffet breakfast served at the hotel every morning.,,,1
+FRA,FRA-INC-004,INCLUSION,Transport,Airport Transfers,Private return transfers between Charles de Gaulle Airport and hotel.,,,1
+FRA,FRA-INC-005,INCLUSION,Transport,All Surface Transfers,All transfers between destinations by private vehicle or coach.,,,2
+FRA,FRA-INC-006,INCLUSION,Sightseeing,Eiffel Tower (2nd Floor),Entry tickets to Eiffel Tower up to 2nd floor (lift access). Summit access not included.,,,1
+FRA,FRA-INC-007,INCLUSION,Sightseeing,Louvre Museum Entry,Skip-the-line entry tickets to the Louvre Museum.,,,2
+FRA,FRA-INC-008,INCLUSION,Sightseeing,Palace of Versailles,Entry ticket to Palace of Versailles with gardens access.,,,3
+FRA,FRA-INC-009,INCLUSION,Sightseeing,Seine River Cruise,1-hour Bateaux Mouches dinner cruise on the Seine River.,,,4
+FRA,FRA-INC-010,INCLUSION,Guide & Assistance,English-Speaking Tour Manager,Professional English-speaking tour manager throughout the trip.,,,1
+FRA,FRA-EXC-001,EXCLUSION,Flights,International Airfare,International flights are not included in the package.,,,1
+FRA,FRA-EXC-002,EXCLUSION,Meals,Lunches & Dinners,Meals other than breakfast are on personal account.,,,2
+FRA,FRA-EXC-003,EXCLUSION,Insurance,Travel & Medical Insurance,Travel and medical insurance not included.,,,3
+FRA,FRA-EXC-004,EXCLUSION,Personal Expenses,Personal Expenses & Gratuities,Personal shopping and tipping not included.,,,4
+FRA,FRA-EXC-005,EXCLUSION,Visa & Fees,France Schengen Visa,Schengen visa fees not included.,,,5
+FRA,FRA-EXC-006,EXCLUSION,Sightseeing,Eiffel Tower Summit Access,Tickets to the Eiffel Tower summit floor are not included.,,,6
+ITA,ITA-INC-001,INCLUSION,Accommodation,4-Star Hotel Accommodation,Comfortable 4-star hotel on twin-sharing basis with daily breakfast.,,,1
+ITA,ITA-INC-002,INCLUSION,Accommodation,Hotel Taxes & City Tax,Hotel taxes and Venice city tax included.,,,2
+ITA,ITA-INC-003,INCLUSION,Meals,Daily Breakfast,Daily breakfast at the hotel,,,1
+ITA,ITA-INC-004,INCLUSION,Transport,Airport Transfers,Private transfers from Rome Fiumicino Airport to hotel.,,,1
+ITA,ITA-INC-005,INCLUSION,Transport,All Surface Transfers,All coach transfers between Rome and Florence and Venice.,,,2
+ITA,ITA-INC-006,INCLUSION,Transport,Venice Water Taxi,Return water taxi transfer from Venice Mestre to Venice island.,,,3
+ITA,ITA-INC-007,INCLUSION,Sightseeing,Colosseum & Roman Forum,Priority entry tickets to Colosseum and Roman Forum.,,,1
+ITA,ITA-INC-008,INCLUSION,Sightseeing,Vatican Museums & Sistine Chapel,Skip-the-line entry to Vatican Museums and Sistine Chapel.,,,2
+ITA,ITA-INC-009,INCLUSION,Sightseeing,Florence Duomo (Exterior Guided Walk),Guided walking tour of Florence including Duomo exterior and Ponte Vecchio.,,,3
+ITA,ITA-INC-010,INCLUSION,Sightseeing,Venice Walking Tour & Gondola Ride,1-hour gondola ride on Venice canals plus walking tour of San Marco.,,,4
+ITA,ITA-INC-011,INCLUSION,Guide & Assistance,English-Speaking Tour Manager,Professional English-speaking tour manager throughout.,,,1
+ITA,ITA-EXC-001,EXCLUSION,Flights,International Airfare,International flights not included.,,,1
+ITA,ITA-EXC-002,EXCLUSION,Meals,Lunches & Dinners,All lunches and dinners on personal account.,,,2
+ITA,ITA-EXC-003,EXCLUSION,Insurance,Travel & Medical Insurance,Travel and health insurance not included.,,,3
+ITA,ITA-EXC-004,EXCLUSION,Personal Expenses,Personal Expenses,Shopping and personal gratuities not included.,,,4
+ITA,ITA-EXC-005,EXCLUSION,Visa & Fees,Italy Schengen Visa,Schengen visa and processing fees not included.,,,5
+ITA,ITA-EXC-006,EXCLUSION,Sightseeing,Uffizi Gallery Florence,Uffizi Gallery entry tickets not included — optional add-on.,,,6
+ISL,ISL-INC-001,INCLUSION,Accommodation,4-Star Hotel Accommodation,Comfortable 4-star hotel throughout on twin-sharing basis with daily breakfast.,,,1
+ISL,ISL-INC-002,INCLUSION,Accommodation,Hotel Taxes & Service Charges,All hotel-related taxes included.,,,2
+ISL,ISL-INC-003,INCLUSION,Meals,Daily Breakfast,Daily hotel breakfast included.,,,1
+ISL,ISL-INC-004,INCLUSION,Transport,Airport Transfers,Return private transfers from Keflavík International Airport.,,,1
+ISL,ISL-INC-005,INCLUSION,Transport,All Surface Transfers,All inter-city transfers by private coach/4WD throughout Iceland.,,,2
+ISL,ISL-INC-006,INCLUSION,Sightseeing,Golden Circle Tour,Full-day Golden Circle tour: Þingvellir National Park + Geysir + Gullfoss.,,,1
+ISL,ISL-INC-007,INCLUSION,Sightseeing,Blue Lagoon Entry (Comfort Package),Entry to Blue Lagoon geothermal spa — Comfort package with silica mud mask.,,,2
+ISL,ISL-INC-008,INCLUSION,Sightseeing,South Coast Tour,South Coast tour: Skógafoss + Seljalandsfoss + Reynisfjara black sand beach + Jökulsárlón glacier lagoon.,,,3
+ISL,ISL-INC-009,INCLUSION,Sightseeing,Whale Watching Tour,3-hour whale watching boat tour from Reykjavík harbour. Subject to weather.,,,4
+ISL,ISL-INC-010,INCLUSION,Sightseeing,Northern Lights Hunt (Oct–Mar),Northern lights guided minibus tour with guarantee of a second tour if no lights seen.,,,5
+ISL,ISL-INC-011,INCLUSION,Guide & Assistance,English-Speaking Tour Manager,Professional tour manager throughout the Iceland trip.,,,1
+ISL,ISL-INC-012,INCLUSION,Guide & Assistance,24x7 Emergency Support,24-hour helpline for emergencies during tour.,,,2
+ISL,ISL-EXC-001,EXCLUSION,Flights,International Airfare,International airfare not included.,,,1
+ISL,ISL-EXC-002,EXCLUSION,Meals,Lunches & Dinners,All lunches and dinners are on personal account (food costs in Iceland can be high).,,,2
+ISL,ISL-EXC-003,EXCLUSION,Insurance,Travel & Medical Insurance,Travel and emergency medical insurance not included.,,,3
+ISL,ISL-EXC-004,EXCLUSION,Personal Expenses,Personal Expenses & Tips,All personal expenses including tips and gratuities.,,,4
+ISL,ISL-EXC-005,EXCLUSION,Visa & Fees,Iceland Schengen Visa,Schengen visa fees not included.,,,5
+ISL,ISL-EXC-006,EXCLUSION,Sightseeing,Northern Lights (Apr–Sep),Northern lights tours not available during summer months (midnight sun season).,,,6
+ISL,ISL-EXC-007,EXCLUSION,Optional Activities,Glacier Hiking & Ice Cave Tours,Optional glacier hiking at Sólheimajökull and ice cave tours at Vatnajökull not included.,,,7
+ISL,ISL-EXC-008,EXCLUSION,Optional Activities,Horse Riding,Optional Icelandic horse riding experience not included.,,,8

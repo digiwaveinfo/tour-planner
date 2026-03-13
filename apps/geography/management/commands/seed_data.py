@@ -44,6 +44,7 @@ COUNTRIES_CSV = CSV_DIR / "01_countries.csv"
 REGIONS_CSV = CSV_DIR / "02_regions.csv"
 ATTRACTIONS_CSV = CSV_DIR / "03_attractions.csv"
 HOTELS_CSV = CSV_DIR / "04_hotels.csv"
+INCLUSIONS_CSV = CSV_DIR / "05_inclusions_exclusions.csv"
 DAY_TOURS_CSV = CSV_DIR / "07_day_tours.csv"
 
 
@@ -110,7 +111,7 @@ class Command(BaseCommand):
                 return
 
         # Verify all CSV files exist before starting
-        for csv_path in [COUNTRIES_CSV, REGIONS_CSV, ATTRACTIONS_CSV, HOTELS_CSV, DAY_TOURS_CSV]:
+        for csv_path in [COUNTRIES_CSV, REGIONS_CSV, ATTRACTIONS_CSV, HOTELS_CSV, INCLUSIONS_CSV, DAY_TOURS_CSV]:
             if not csv_path.exists():
                 self.stderr.write(self.style.ERROR(f"CSV not found: {csv_path}"))
                 return
@@ -121,6 +122,7 @@ class Command(BaseCommand):
             regions = self._seed_regions(countries)
             self._seed_attractions(regions)
             self._seed_hotels(countries, regions)  # may auto-create missing regions
+            self._seed_inclusions(countries)
             self._seed_day_tours(regions)
 
         self.stdout.write(self.style.SUCCESS("\n✓ Seeding complete!"))
@@ -472,6 +474,85 @@ class Command(BaseCommand):
     # ─────────────────────────────────────────
     # DAY TOURS
     # ─────────────────────────────────────────
+
+    # ─────────────────────────────────────────
+    # INCLUSIONS / EXCLUSIONS
+    # ─────────────────────────────────────────
+
+    def _seed_inclusions(self, countries: dict):
+        self.stdout.write("\nSeeding inclusions/exclusions...")
+        created = 0
+        skipped = 0
+
+        # Build category map (auto-create)
+        cat_map = {c.name.strip().lower(): c for c in InclExclCategory.objects.all()}
+        existing_codes = set(InclusionExclusion.objects.values_list("unique_code", flat=True))
+
+        with open(INCLUSIONS_CSV, newline="", encoding="utf-8-sig") as f:
+            reader = csv.DictReader(f)
+            for row in reader:
+                if _is_desc_row(row):
+                    continue
+
+                country_code = row.get("country_code", "").strip().upper()
+                unique_code = row.get("unique_code", "").strip()
+                type_val = row.get("type", "").strip().upper()
+                category_name = row.get("category", "").strip()
+                item_service = row.get("item_service", "").strip()
+                details_notes = row.get("details_notes", "").strip() or None
+                source_files = row.get("source_files", "").strip() or None
+                display_order_raw = row.get("display_order", "0").strip()
+
+                if not item_service or not unique_code:
+                    continue
+
+                if type_val not in ("INCLUSION", "EXCLUSION"):
+                    self.stdout.write(self.style.WARNING(f"  ! '{unique_code}': invalid type '{type_val}' — skipped"))
+                    skipped += 1
+                    continue
+
+                country = countries.get(country_code)
+                if not country:
+                    self.stdout.write(self.style.WARNING(f"  ! '{unique_code}': unknown country '{country_code}' — skipped"))
+                    skipped += 1
+                    continue
+
+                if unique_code in existing_codes:
+                    skipped += 1
+                    continue
+
+                if not category_name:
+                    skipped += 1
+                    continue
+
+                cat_key = category_name.lower()
+                if cat_key not in cat_map:
+                    cat_obj = InclExclCategory.objects.create(name=category_name, is_active=True)
+                    cat_map[cat_key] = cat_obj
+                    self.stdout.write(f"  ~ Category created: {category_name}")
+                category = cat_map[cat_key]
+
+                try:
+                    display_order = int(display_order_raw)
+                except ValueError:
+                    display_order = 0
+
+                InclusionExclusion.objects.create(
+                    country=country,
+                    unique_code=unique_code,
+                    type=type_val,
+                    category=category,
+                    item_service=item_service,
+                    details_notes=details_notes,
+                    source_files=source_files,
+                    display_order=display_order,
+                    is_active=True,
+                )
+                existing_codes.add(unique_code)
+                created += 1
+                self.stdout.write(f"  + [{type_val}] {item_service} ({country_code})")
+
+        self.stdout.write(f"  → {created} inclusion/exclusion items created, {skipped} skipped.")
 
     def _seed_day_tours(self, regions: dict):
         self.stdout.write("\nSeeding day tours...")
