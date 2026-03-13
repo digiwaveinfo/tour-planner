@@ -7,8 +7,14 @@ from rest_framework.filters import SearchFilter, OrderingFilter
 from .models import DayTour, DayTourAttraction
 from .serializer import DayTourSerializer
 from common.permissions import DayTourPermission
+from common.constant import CurrencyType
 from django.db import transaction
+from rest_framework.parsers import MultiPartParser, FormParser
+from apps.geography.models import Region
 import secrets
+import pandas as pd
+import re
+import unicodedata
 from django.db.models import Q
 from common.constant import UserRoletype
 
@@ -92,4 +98,110 @@ class DayTourViewSet(ModelViewSet):
         return Response({
             "message": "Removed successfully",
             "deleted": deleted
+        })
+
+    @action(detail=False, methods=["post"], url_path="bulk-upload",
+            parser_classes=[MultiPartParser, FormParser])
+    def bulk_upload(self, request):
+        file = request.FILES.get("file")
+        if not file:
+            return Response({"error": "File required"}, status=400)
+        try:
+            df = pd.read_excel(file)
+        except Exception:
+            try:
+                file.seek(0)
+                df = pd.read_csv(file, encoding="utf-8-sig")
+            except Exception:
+                return Response({"error": "Invalid file. Upload .xlsx or .csv"}, status=400)
+
+        df.columns = df.columns.str.strip().str.lower()
+        if "region" not in df.columns or "activity_combination" not in df.columns:
+            return Response({"error": "Missing required columns: region, activity_combination"}, status=400)
+
+        # Drop description/instructions row
+        desc_mask = df.apply(
+            lambda row: row.astype(str).str.upper().str.startswith(("REQUIRED", "OPTIONAL")).any(), axis=1
+        )
+        df = df[~desc_mask]
+
+        def _norm(s):
+            s = s.strip().lower()
+            return unicodedata.normalize("NFKD", s).encode("ASCII", "ignore").decode("ASCII")
+
+        all_regions = Region.objects.all()
+        region_map = {_norm(r.name): r for r in all_regions}
+
+        valid_currencies = {c[0] for c in CurrencyType.CHOICES}
+        valid_modes = {"OPEN", "DATE_RANGE", "MONTH", "YEAR"}
+
+        records = df.to_dict("records")
+        created_count = 0
+        skipped = 0
+        errors = []
+
+        with transaction.atomic():
+            for idx, row in enumerate(records, start=2):
+                region_raw = str(row.get("region") or "").strip()
+                activity = row.get("activity_combination")
+
+                if not activity or (isinstance(activity, float) and pd.isna(activity)):
+                    errors.append(f"Row {idx}: Missing activity_combination — skipped")
+                    skipped += 1
+                    continue
+                activity = str(activity).strip()
+
+                region = region_map.get(_norm(region_raw))
+                if not region:
+                    errors.append(f"Row {idx}: Region '{region_raw}' not found — skipped")
+                    skipped += 1
+                    continue
+
+                def _str(v):
+                    return str(v).strip() if v is not None and not (isinstance(v, float) and pd.isna(v)) else None
+                def _dec(v):
+                    try:
+                        return float(v) if v is not None and not (isinstance(v, float) and pd.isna(v)) else None
+                    except (ValueError, TypeError):
+                        return None
+                def _int(v, default=0):
+                    try:
+                        return int(v) if v is not None and not (isinstance(v, float) and pd.isna(v)) else default
+                    except (ValueError, TypeError):
+                        return default
+
+                validity_mode = (_str(row.get("validity_mode")) or "OPEN").upper()
+                if validity_mode not in valid_modes:
+                    validity_mode = "OPEN"
+
+                currency = (_str(row.get("currency")) or "INR").upper()
+                if currency not in valid_currencies:
+                    currency = "INR"
+
+                itinerary_text = _str(row.get("itinerary_text")) or activity
+
+                DayTour.objects.create(
+                    region=region,
+                    unique_code=self._generate_unique_code(),
+                    validity_mode=validity_mode,
+                    valid_from=_str(row.get("valid_from")),
+                    valid_to=_str(row.get("valid_to")),
+                    price=_dec(row.get("price")),
+                    currency=currency,
+                    activity_combination=activity,
+                    itinerary_text=itinerary_text,
+                    est_time_distance=_str(row.get("est_time_distance")),
+                    overnight_location=_str(row.get("overnight_location")),
+                    source_file=_str(row.get("source_file")),
+                    display_order=_int(row.get("display_order")),
+                    created_by=request.user,
+                    is_active=True,
+                )
+                created_count += 1
+
+        return Response({
+            "total_file_records": len(records),
+            "created": created_count,
+            "skipped": skipped,
+            "errors": errors[:20],
         })

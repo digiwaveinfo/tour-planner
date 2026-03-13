@@ -1,0 +1,22 @@
+﻿region,name,key_features_notes,source_citations,latitude,longitude,display_order
+REQUIRED - Region name (exact match) OR region ID,REQUIRED - Attraction name,OPTIONAL - Key highlights & features,OPTIONAL - Data source reference,OPTIONAL - Decimal latitude,OPTIONAL - Decimal longitude,OPTIONAL - Sort order (default 0)
+Bernese Oberland,Jungfraujoch - Top of Europe,"Highest railway station in Europe at 3,454m. Sphinx Observatory, Ice Palace, Aletsch Glacier views",Switzerland Tourism Official,46.5474,7.9854,1
+Bernese Oberland,Lake Brienz,"Turquoise glacial lake, Giessbach Falls, scenic boat cruises",Switzerland Tourism Official,46.727,7.9664,2
+Central Switzerland,Chapel Bridge (Kapellbrücke) Lucerne,"14th-century covered wooden bridge, oldest in Europe. Water Tower, interior paintings",Lucerne Tourism,47.0517,8.3075,1
+Central Switzerland,Mount Pilatus,"Golden round trip: boat, cogwheel railway, cable car. Panoramic views at 2,128m",Pilatus Bahnen AG,46.979,8.2553,2
+Zurich Region,Rhine Falls (Rheinfall),"Largest waterfall in Europe (150m wide, 23m high). Boat rides to central rock",Schaffhausen Tourism,47.6779,8.615,1
+Reykjavík,Reykjavík City Tour,Introduction to the capital city,,64.1458,-21.8955,2
+Reykjavík,Blue Lagoon,"Comfort Package includes welcome drink, 1 face mask, and towel",,64.1458,-21.8955,1
+Reykjavík,Perlan- Wonders of Iceland,Museum and observation deck experience,,64.1458,-21.8955,4
+Reykjavík,Flyover Iceland,Immersive flight simulation experience,,64.1458,-21.8955,3
+Akureyri,Diamond Circle Tour,"Covers Goðafoss, Pseudo Craters, and Namaskarð",,65.6833,-18.0875,5
+Akureyri,Earth Lagoon,Formerly Myvatn Nature Bath; Signature Package includes 1 drink,,65.6833,-18.0875,6
+Akureyri,Whale Watching,Boat tour departing from Akureyri,,65.6833,-18.0875,7
+Borgarnes,Scenic Waterfalls,"Visit to Deildartunguhver, Hraunfossar, and Barnafoss",,64.5333,-21.9167,9
+Borgarnes,Into the Glacier,Journey into glacier tunnels via Monster Truck,,64.5333,-21.9167,8
+Vík,South Coast Tour,"Includes Seljalandsfoss, Skógafoss, and Reynisfjara Black Sand Beach",,63.4194,-19.0019,12
+Vík,Jökulsárlón Glacier Lagoon,Scenic lagoon with floating icebergs,,63.4194,-19.0019,11
+Vík,Amphibian Boat Ride,Boat tour among icebergs at the lagoon,,63.4194,-19.0019,10
+Vík,Diamond Beach,Diamond beach near the lagoon,,63.4194,-19.0019,13
+Keflavík,Tomato Farm,Includes 1 tomato ice cream and 1 tomato cheesecake per couple,,64.0022,-22.562,14
+Keflavík,Golden Circle Tour,"Covers Þingvellir National Park, Geysir, and Gullfoss",,64.0022,-22.562,15

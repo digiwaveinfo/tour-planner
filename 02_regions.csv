@@ -1,0 +1,10 @@
+﻿country_code,name,code,description,display_order
+REQUIRED - Must match country code from 01_countries,REQUIRED - Region name,REQUIRED - Unique region code within country,OPTIONAL - Region description,OPTIONAL - Sort order (default 0)
+CHE,Bernese Oberland,BERN-OB,"Famous alpine region featuring Jungfrau, Eiger and stunning lakes",1
+CHE,Central Switzerland,CENT-CH,"Heart of Switzerland with Lake Lucerne, Mt. Pilatus and Rigi",2
+CHE,Zurich Region,ZUR-REG,"Largest city region with Rhine Falls, old town and shopping",3
+ISL,Reykjavík ,,The vibrant capital and largest city of Iceland,1
+ISL,Akureyri ,,"Known as the ""Capital of the North,"" it is the second-largest urban area in the country.",2
+ISL,Borgarnes ,,A historic coastal town located on a peninsula in western Iceland.,3
+ISL,Vík ,,"A small, picturesque seafront village on the southernmost tip of the island",4
+ISL,Keflavík,,A town on the Reykjanes Peninsula that serves as the gateway to Iceland's international airport,5

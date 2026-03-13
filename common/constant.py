@@ -57,9 +57,13 @@ class CurrencyType:
     INR = "INR"
     USD = "USD"
     EUR = "EUR"
+    ISK = "ISK"
+    CHF = "CHF"
 
     CHOICES = [
         (INR, "Indian Rupee"),
         (USD, "US Dollar"),
         (EUR, "Euro"),
+        (ISK, "Icelandic Króna"),
+        (CHF, "Swiss Franc"),
     ]
