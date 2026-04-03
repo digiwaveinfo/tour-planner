@@ -3,11 +3,17 @@ from .models import UserPlan,UserPlanDay,UserPlanInclExcl
 from apps.day_tours.serializer import DayTourSerializer
 
 class UserPlanDaySerializer(serializers.ModelSerializer):
-    day_tour_name=serializers.CharField(source="day_tour.activity_combination",read_only=True,default=None)
     region_name=serializers.CharField(source="region.name",read_only=True,default=None)
     template_name=serializers.CharField(source="template.name",read_only=True,default=None)
     includes_night=serializers.BooleanField(source="template.includes_night",read_only=True,default=False)
-    day_tour_detail=DayTourSerializer(source="day_tour",read_only=True)
+    
+    morning_tour_name=serializers.CharField(source="morning_tour.activity_combination",read_only=True,default=None)
+    noon_tour_name=serializers.CharField(source="noon_tour.activity_combination",read_only=True,default=None)
+    night_tour_name=serializers.CharField(source="night_tour.activity_combination",read_only=True,default=None)
+    
+    morning_tour_detail=DayTourSerializer(source="morning_tour",read_only=True)
+    noon_tour_detail=DayTourSerializer(source="noon_tour",read_only=True)
+    night_tour_detail=DayTourSerializer(source="night_tour",read_only=True)
     hotel_name=serializers.CharField(source="hotel.name",read_only=True,default=None)
     hotel_star_rating=serializers.IntegerField(source="hotel.star_rating",read_only=True,default=None)
     hotel_price_per_night=serializers.DecimalField(source="hotel.price_per_night",read_only=True,default=None,max_digits=10,decimal_places=2)

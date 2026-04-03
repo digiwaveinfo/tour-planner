@@ -143,10 +143,15 @@ class UserPlanViewSet(ModelViewSet):
                     default_template = tmpl_qs.first()
 
                     # Get the day_tour from the template's day entry (day_number=1)
-                    default_day_tour = None
+                    m_tour = None
+                    n_tour = None
+                    ni_tour = None
                     if default_template:
                         tmpl_day = default_template.days.filter(day_number=1).first()
-                        default_day_tour = tmpl_day.day_tour if tmpl_day else None
+                        if tmpl_day:
+                            m_tour = tmpl_day.morning_tour
+                            n_tour = tmpl_day.noon_tour
+                            ni_tour = tmpl_day.night_tour
 
                     for _ in range(days_count):
                         UserPlanDay.objects.create(
@@ -154,7 +159,9 @@ class UserPlanViewSet(ModelViewSet):
                             day_number=day_number,
                             region_id=region_id,
                             template=default_template,
-                            day_tour=default_day_tour,
+                            morning_tour=m_tour,
+                            noon_tour=n_tour,
+                            night_tour=ni_tour,
                         )
                         day_number += 1
 
@@ -322,8 +329,12 @@ class UserPlanViewSet(ModelViewSet):
         story.append(Spacer(1, 2 * mm))
 
         sorted_days = sorted(plan.days.select_related(
-            "region", "template", "day_tour", "hotel"
-        ).prefetch_related("day_tour__tour_attractions__attraction").all(), key=lambda d: d.day_number)
+            "region", "template", "morning_tour", "noon_tour", "night_tour", "hotel"
+        ).prefetch_related(
+            "morning_tour__tour_attractions__attraction",
+            "noon_tour__tour_attractions__attraction",
+            "night_tour__tour_attractions__attraction"
+        ).all(), key=lambda d: d.day_number)
 
         # Build city groups from actual day objects
         groups = []
@@ -356,36 +367,45 @@ class UserPlanViewSet(ModelViewSet):
             # Day rows within this city
             day_rows = []
             for day in group["days"]:
-                tour = day.day_tour
-                region_label = day.region.name if day.region else ""
-                activity = tour.activity_combination if tour else "Free Day"
-                notes = tour.itinerary_text if tour else ""
-
-                # Attractions
-                attractions_list = []
-                if tour:
-                    for ta in tour.tour_attractions.all().order_by("visit_order"):
-                        attractions_list.append(f"{ta.visit_order}. {ta.attraction.name}")
-
-                price_str = ""
-                if tour and tour.price and tour.price > 0:
-                    price_str = f"{tour.currency or 'INR'} {tour.price:,.0f}"
-
-                # Build multi-line day cell
-                parts = [f"<b>Day {day.day_number}</b> &nbsp; <font color='#94a3b8'>|</font> &nbsp; <b>{activity}</b>"]
-                if notes:
-                    parts.append(f"<br/><font size='8' color='#64748b'>{notes[:300]}</font>")
-                if attractions_list:
-                    parts.append(f"<br/><font size='8' color='#4f46e5'>{'  •  '.join(attractions_list)}</font>")
-
                 meta_bits = []
-                if tour and tour.est_time_distance:
-                    meta_bits.append(f"⏱ {tour.est_time_distance}")
-                if tour and tour.overnight_location:
-                    meta_bits.append(f"🏨 {tour.overnight_location}")
+                parts = [f"<b>Day {day.day_number}</b>"]
+                
+                # Support Morning, Noon, Night slots
+                slots = [
+                    ("Morning", day.morning_tour),
+                    ("Noon", day.noon_tour),
+                    ("Night", day.night_tour)
+                ]
+                
+                day_price = 0
+                currency = "INR"
+                
+                for slot_label, tour in slots:
+                    if tour:
+                        activity = tour.activity_combination
+                        notes = tour.itinerary_text
+                        attractions_list = [f"{ta.visit_order}. {ta.attraction.name}" for ta in tour.tour_attractions.all().order_by("visit_order")]
+                        
+                        parts.append(f"<br/><b>{slot_label}:</b> {activity}")
+                        if notes:
+                            parts.append(f"<br/><font size='8' color='#64748b'>{notes[:300]}</font>")
+                        if attractions_list:
+                            parts.append(f"<br/><font size='8' color='#4f46e5'>{'  •  '.join(attractions_list)}</font>")
+                        
+                        if tour.price:
+                            day_price += float(tour.price)
+                            currency = tour.currency or currency
+                        if tour.est_time_distance:
+                            meta_bits.append(f"{slot_label}: ⏱ {tour.est_time_distance}")
+                
+                if not any(t[1] for t in slots):
+                    parts.append("<br/><i>Free Day</i>")
+
                 if meta_bits:
                     parts.append(f"<br/><font size='7' color='#94a3b8'>{'  |  '.join(meta_bits)}</font>")
 
+                price_str = f"{currency} {day_price:,.0f}" if day_price > 0 else ""
+                
                 day_rows.append([
                     Paragraph("".join(parts), s_body),
                     Paragraph(price_str, s_right_b),
@@ -414,15 +434,22 @@ class UserPlanViewSet(ModelViewSet):
         ]
         grand_total = 0
         for day in sorted_days:
-            tour = day.day_tour
-            price_val = float(tour.price) if tour and tour.price else 0
-            grand_total += price_val
-            currency = tour.currency if tour else "INR"
+            day_total = 0
+            currency = "INR"
+            activities = []
+            
+            for t in [day.morning_tour, day.noon_tour, day.night_tour]:
+                if t:
+                    day_total += float(t.price or 0)
+                    currency = t.currency or currency
+                    activities.append(t.activity_combination)
+            
+            grand_total += day_total
             price_rows.append([
                 Paragraph(f"Day {day.day_number}", s_body),
-                Paragraph(tour.activity_combination if tour else "—", s_body),
+                Paragraph(", ".join(activities) if activities else "—", s_body),
                 Paragraph(day.region.name if day.region else "—", s_body),
-                Paragraph(f"{currency or 'INR'} {price_val:,.0f}" if price_val > 0 else "—", s_body),
+                Paragraph(f"{currency} {day_total:,.0f}" if day_total > 0 else "—", s_body),
             ])
         # Total row
         price_rows.append([
@@ -567,7 +594,9 @@ class UserPlanViewSet(ModelViewSet):
                 day_number=d.day_number,
                 region=d.region,
                 template=d.template,
-                day_tour=d.day_tour,
+                morning_tour=d.morning_tour,
+                noon_tour=d.noon_tour,
+                night_tour=d.night_tour,
                 custom_itinerary_text=d.custom_itinerary_text,
                 notes=d.notes,
             )
