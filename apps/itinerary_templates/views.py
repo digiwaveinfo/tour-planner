@@ -27,7 +27,9 @@ class ItineraryTemplateViewSet(ModelViewSet):
         if not self.request.user.is_staff:
             queryset = queryset.filter(is_active=True)
         queryset = queryset.prefetch_related(
-            "days__day_tour__tour_attractions__attraction",
+            "days__morning_tour__tour_attractions__attraction",
+            "days__noon_tour__tour_attractions__attraction",
+            "days__night_tour__tour_attractions__attraction",
             "incl_excl__incl_excl__category",
         ).select_related("country", "region")
 

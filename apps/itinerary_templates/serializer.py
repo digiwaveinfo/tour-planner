@@ -3,7 +3,9 @@ from apps.itinerary_templates.models import *
 from apps.day_tours.serializer import DayTourSerializer
 
 class ItineraryTemplateDaySerializer(serializers.ModelSerializer):
-    day_tour_detail = DayTourSerializer(source="day_tour", read_only=True)
+    morning_tour_detail = DayTourSerializer(source="morning_tour", read_only=True)
+    noon_tour_detail = DayTourSerializer(source="noon_tour", read_only=True)
+    night_tour_detail = DayTourSerializer(source="night_tour", read_only=True)
 
     class Meta:
         model = ItineraryTemplateDay

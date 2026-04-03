@@ -4,16 +4,15 @@ from .models import ItineraryTemplate, ItineraryTemplateDay, ItineraryTemplateIn
 
 class ItineraryTemplateDayInline(admin.TabularInline):
     """
-    Inline for managing the single day-tour linked to a template.
-    Shown directly on the template edit page — no separate 'Manage Days' required.
+    Inline for managing Morning, Noon, and Night tour slots for a template.
     """
     model = ItineraryTemplateDay
     extra = 1
-    max_num = 1  # Each template is always 1 day
-    autocomplete_fields = ("day_tour",)
-    fields = ("day_number", "day_tour", "custom_notes", "is_arrival_day", "is_departure_day")
-    verbose_name = "Day Tour (Activity for this day)"
-    verbose_name_plural = "Day Tour"
+    max_num = 1
+    autocomplete_fields = ("morning_tour", "noon_tour", "night_tour")
+    fields = ("day_number", "morning_tour", "noon_tour", "night_tour", "custom_notes", "is_arrival_day", "is_departure_day")
+    verbose_name = "Day Plan"
+    verbose_name_plural = "Day Plan slots"
 
 
 class ItineraryTemplateInclExclInline(admin.TabularInline):
@@ -52,11 +51,11 @@ class ItineraryTemplateAdmin(admin.ModelAdmin):
 
 @admin.register(ItineraryTemplateDay)
 class ItineraryTemplateDayAdmin(admin.ModelAdmin):
-    list_display = ("id", "template", "day_number", "day_tour", "is_arrival_day", "is_departure_day")
-    search_fields = ("template__name", "day_tour__unique_code")
+    list_display = ("id", "template", "day_number", "morning_tour", "noon_tour", "night_tour", "is_arrival_day", "is_departure_day")
+    search_fields = ("template__name", "morning_tour__unique_code", "noon_tour__unique_code", "night_tour__unique_code")
     list_filter = ("template", "is_arrival_day", "is_departure_day")
     ordering = ("template", "day_number")
-    autocomplete_fields = ("template", "day_tour")
+    autocomplete_fields = ("template", "morning_tour", "noon_tour", "night_tour")
 
 
 @admin.register(ItineraryTemplateInclExcl)

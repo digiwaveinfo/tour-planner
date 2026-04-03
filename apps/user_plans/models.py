@@ -45,7 +45,9 @@ class UserPlanDay(models.Model):
  region=models.ForeignKey(Region,on_delete=models.SET_NULL,null=True,blank=True,related_name="plan_days")
  # Template loaded for this day — user can swap it from the itinerary page
  template=models.ForeignKey(ItineraryTemplate,on_delete=models.SET_NULL,null=True,blank=True,related_name="plan_days_using")
- day_tour=models.ForeignKey(DayTour,on_delete=models.SET_NULL,null=True,blank=True,related_name="plan_days")
+ morning_tour=models.ForeignKey(DayTour,on_delete=models.SET_NULL,null=True,blank=True,related_name="plan_morning_days")
+ noon_tour=models.ForeignKey(DayTour,on_delete=models.SET_NULL,null=True,blank=True,related_name="plan_noon_days")
+ night_tour=models.ForeignKey(DayTour,on_delete=models.SET_NULL,null=True,blank=True,related_name="plan_night_days")
  hotel=models.ForeignKey(Hotel,on_delete=models.SET_NULL,null=True,blank=True,related_name="plan_days",help_text="Hotel for overnight stay on this day")
  custom_itinerary_text=models.TextField(null=True,blank=True)
  notes=models.TextField(null=True,blank=True)
@@ -58,7 +60,7 @@ class UserPlanDay(models.Model):
    models.UniqueConstraint(fields=["user_plan","day_number"],name="unique_plan_day")
   ]
   indexes=[
-   models.Index(fields=["user_plan","day_tour"]),
+   models.Index(fields=["user_plan","morning_tour","noon_tour","night_tour"]),
   ]
 
  def __str__(self):
