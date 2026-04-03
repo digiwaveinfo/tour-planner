@@ -1,7 +1,6 @@
 from rest_framework import serializers
 from .models import UserPlan,UserPlanDay,UserPlanInclExcl
 from apps.day_tours.serializer import DayTourSerializer
-from apps.inclusions.serializer import InclusionExclusionSerializer
 
 class UserPlanDaySerializer(serializers.ModelSerializer):
     region_name=serializers.CharField(source="region.name",read_only=True,default=None)
@@ -13,9 +12,7 @@ class UserPlanDaySerializer(serializers.ModelSerializer):
     night_tour_name=serializers.CharField(source="night_tour.activity_combination",read_only=True,default=None)
     
     morning_tour_detail=DayTourSerializer(source="morning_tour",read_only=True)
-    morning_to_noon_transport_detail=InclusionExclusionSerializer(source="morning_to_noon_transport",read_only=True)
     noon_tour_detail=DayTourSerializer(source="noon_tour",read_only=True)
-    noon_to_night_transport_detail=InclusionExclusionSerializer(source="noon_to_night_transport",read_only=True)
     night_tour_detail=DayTourSerializer(source="night_tour",read_only=True)
     hotel_name=serializers.CharField(source="hotel.name",read_only=True,default=None)
     hotel_star_rating=serializers.IntegerField(source="hotel.star_rating",read_only=True,default=None)

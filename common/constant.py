@@ -79,14 +79,3 @@ class DaySlot:
         (NIGHT, "Night"),
         (FULL_DAY, "Full Day"),
     )
-class TransportMode:
-    BIKE = "BIKE"
-    CAR = "CAR"
-    BUS = "BUS"
-    TRAIN = "TRAIN"
-    CHOICES = (
-        (BIKE, "Bike"),
-        (CAR, "Car"),
-        (BUS, "Bus"),
-        (TRAIN, "Train")
-    )
