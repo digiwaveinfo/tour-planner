@@ -58,7 +58,11 @@ class ItineraryTemplateDay(models.Model):
  id=models.BigAutoField(primary_key=True)
  template=models.ForeignKey(ItineraryTemplate,on_delete=models.CASCADE,related_name="days")
  day_number=models.IntegerField()
- day_tour=models.ForeignKey(DayTour,on_delete=models.SET_NULL,null=True,blank=True,related_name="template_days")
+ morning_tour=models.ForeignKey(DayTour,on_delete=models.SET_NULL,null=True,blank=True,related_name="template_morning_days")
+ morning_to_noon_transport=models.ForeignKey(InclusionExclusion,on_delete=models.SET_NULL,null=True,blank=True,related_name="template_morning_to_noon_transport")
+ noon_tour=models.ForeignKey(DayTour,on_delete=models.SET_NULL,null=True,blank=True,related_name="template_noon_days")
+ noon_to_night_transport=models.ForeignKey(InclusionExclusion,on_delete=models.SET_NULL,null=True,blank=True,related_name="template_noon_to_night_transport")
+ night_tour=models.ForeignKey(DayTour,on_delete=models.SET_NULL,null=True,blank=True,related_name="template_night_days")
  custom_notes=models.TextField(null=True,blank=True)
  is_arrival_day=models.BooleanField(default=False)
  is_departure_day=models.BooleanField(default=False)
@@ -70,7 +74,7 @@ class ItineraryTemplateDay(models.Model):
    models.UniqueConstraint(fields=["template","day_number"],name="unique_template_day")
   ]
   indexes=[
-   models.Index(fields=["template","day_tour"]),
+   models.Index(fields=["template","morning_tour","noon_tour","night_tour"]),
   ]
 
  def __str__(self):

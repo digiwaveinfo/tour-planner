@@ -1,6 +1,6 @@
 from django.db import models
 from apps.geography.models import Country
-from common.constant import InclusionExclusionType
+from common.constant import InclusionExclusionType, TransportMode
 
 class InclExclCategory(models.Model):
  id=models.BigAutoField(primary_key=True)
@@ -25,6 +25,8 @@ class InclusionExclusion(models.Model):
  item_service=models.CharField(max_length=200)
  details_notes=models.TextField(null=True,blank=True)
  source_files=models.TextField(null=True,blank=True)
+ is_transport=models.BooleanField(default=False)
+ transport_mode=models.CharField(max_length=20,choices=TransportMode.CHOICES,null=True,blank=True)
  display_order=models.IntegerField(default=0)
  is_active=models.BooleanField(default=True)
  created_at=models.DateTimeField(auto_now_add=True)

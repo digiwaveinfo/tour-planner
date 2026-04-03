@@ -67,3 +67,26 @@ class CurrencyType:
         (ISK, "Icelandic Króna"),
         (CHF, "Swiss Franc"),
     ]
+class DaySlot:
+    MORNING = "MORNING"
+    NOON = "NOON"
+    NIGHT = "NIGHT"
+    FULL_DAY = "FULL_DAY"
+
+    CHOICES = (
+        (MORNING, "Morning"),
+        (NOON, "Noon"),
+        (NIGHT, "Night"),
+        (FULL_DAY, "Full Day"),
+    )
+class TransportMode:
+    BIKE = "BIKE"
+    CAR = "CAR"
+    BUS = "BUS"
+    TRAIN = "TRAIN"
+    CHOICES = (
+        (BIKE, "Bike"),
+        (CAR, "Car"),
+        (BUS, "Bus"),
+        (TRAIN, "Train")
+    )
