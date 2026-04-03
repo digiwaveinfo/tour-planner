@@ -1,10 +1,13 @@
 from rest_framework import serializers
 from apps.itinerary_templates.models import *
 from apps.day_tours.serializer import DayTourSerializer
+from apps.inclusions.serializer import InclusionExclusionSerializer
 
 class ItineraryTemplateDaySerializer(serializers.ModelSerializer):
     morning_tour_detail = DayTourSerializer(source="morning_tour", read_only=True)
+    morning_to_noon_transport_detail = InclusionExclusionSerializer(source="morning_to_noon_transport", read_only=True)
     noon_tour_detail = DayTourSerializer(source="noon_tour", read_only=True)
+    noon_to_night_transport_detail = InclusionExclusionSerializer(source="noon_to_night_transport", read_only=True)
     night_tour_detail = DayTourSerializer(source="night_tour", read_only=True)
 
     class Meta:

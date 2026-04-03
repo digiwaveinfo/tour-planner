@@ -46,7 +46,9 @@ class UserPlanDay(models.Model):
  # Template loaded for this day — user can swap it from the itinerary page
  template=models.ForeignKey(ItineraryTemplate,on_delete=models.SET_NULL,null=True,blank=True,related_name="plan_days_using")
  morning_tour=models.ForeignKey(DayTour,on_delete=models.SET_NULL,null=True,blank=True,related_name="plan_morning_days")
+ morning_to_noon_transport=models.ForeignKey(InclusionExclusion,on_delete=models.SET_NULL,null=True,blank=True,related_name="plan_morning_to_noon_transport")
  noon_tour=models.ForeignKey(DayTour,on_delete=models.SET_NULL,null=True,blank=True,related_name="plan_noon_days")
+ noon_to_night_transport=models.ForeignKey(InclusionExclusion,on_delete=models.SET_NULL,null=True,blank=True,related_name="plan_noon_to_night_transport")
  night_tour=models.ForeignKey(DayTour,on_delete=models.SET_NULL,null=True,blank=True,related_name="plan_night_days")
  hotel=models.ForeignKey(Hotel,on_delete=models.SET_NULL,null=True,blank=True,related_name="plan_days",help_text="Hotel for overnight stay on this day")
  custom_itinerary_text=models.TextField(null=True,blank=True)
