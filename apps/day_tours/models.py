@@ -2,7 +2,7 @@ from django.db import models
 from apps.geography.models import Region
 from apps.account.models import User
 from apps.attractions.models import Attraction
-from common.constant import CurrencyType, TravelType
+from common.constant import CurrencyType, TravelType, DaySlot
 
 class DayTour(models.Model):
  id=models.BigAutoField(primary_key=True)
@@ -13,6 +13,7 @@ class DayTour(models.Model):
  valid_to = models.DateField(null=True, blank=True)
  price = models.DecimalField(max_digits=12,decimal_places=2,null=True,blank=True)
  currency = models.CharField(max_length=10,choices=CurrencyType.CHOICES,default=CurrencyType.INR)
+ slot = models.CharField(max_length=20,choices=DaySlot.CHOICES,default=DaySlot.FULL_DAY)
  activity_combination=models.CharField(max_length=500)
  est_time_distance=models.CharField(max_length=200,null=True,blank=True)
  overnight_location=models.CharField(max_length=150,null=True,blank=True)

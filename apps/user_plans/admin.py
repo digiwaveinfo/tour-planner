@@ -12,11 +12,11 @@ class UserPlanAdmin(admin.ModelAdmin):
 
 @admin.register(UserPlanDay)
 class UserPlanDayAdmin(admin.ModelAdmin):
- list_display=("id","user_plan","day_number","day_tour")
- search_fields=("user_plan__plan_number","day_tour__unique_code")
+ list_display=("id","user_plan","day_number","morning_tour","noon_tour","night_tour")
+ search_fields=("user_plan__plan_number","morning_tour__unique_code","noon_tour__unique_code","night_tour__unique_code")
  list_filter=("user_plan",)
  ordering=("user_plan","day_number")
- autocomplete_fields=("user_plan","day_tour")
+ autocomplete_fields=("user_plan", "morning_tour", "noon_tour", "night_tour")
 
 @admin.register(UserPlanInclExcl)
 class UserPlanInclExclAdmin(admin.ModelAdmin):
