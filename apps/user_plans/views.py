@@ -58,52 +58,111 @@ class UserPlanViewSet(ModelViewSet):
 
     @action(detail=False, methods=["post"])
     def auto_generate_draft(self, request):
-        """
-        Auto-generate a draft plan from city allocations.
-
-        Request body:
-        {
-            "country": <id>,
-            "total_days": 5,
-            "start_date": "2025-06-10",   // optional
-            "travel_type": "COUPLE",       // optional
-            "city_allocations": [
-                {"region": <id>, "days": 3},
-                {"region": <id>, "days": 2}
-            ]
-        }
-
-        Logic:
-        1. Validate total_days == sum of allocation days
-        2. Create UserPlan (DRAFT)
-        3. For each city, load its default template (region + is_default + is_active)
-        4. Create UserPlanDay rows linked to region + template + day_tour
-        5. Return the full plan
-        """
-    @action(detail=False, methods=["post"])
-    def auto_generate_draft(self, request):
-        print("====== AUTO GENERATE DRAFT REACHED ======")
-        try:
-            print("REQUEST BODY:", request.body)
-        except Exception as e:
-            print("COULD NOT READ BODY:", e)
+        """Auto-generate a DRAFT plan from day_assignments (preferred) or city_allocations (fallback)."""
         try:
             country_id = request.data.get("country")
-            total_days = request.data.get("total_days")
+            total_days_raw = request.data.get("total_days")
             start_date = request.data.get("start_date")
             travel_type = request.data.get("travel_type")
+            day_assignments = request.data.get("day_assignments", [])
             city_allocations = request.data.get("city_allocations", [])
 
-            if not country_id or not total_days or not city_allocations:
+            if not country_id or not total_days_raw:
                 return Response(
-                    {"error": "country, total_days, and city_allocations are required."},
+                    {"error": "country and total_days are required."},
                     status=status.HTTP_400_BAD_REQUEST,
                 )
 
-            allocated_total = sum(a.get("days", 0) for a in city_allocations)
-            if allocated_total != int(total_days):
+            try:
+                total_days = int(total_days_raw)
+            except (TypeError, ValueError):
                 return Response(
-                    {"error": f"city_allocations sum ({allocated_total}) must equal total_days ({total_days})."},
+                    {"error": "total_days must be a valid integer."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+
+            if total_days <= 0:
+                return Response(
+                    {"error": "total_days must be greater than 0."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+
+            normalized_day_assignments = []
+            if day_assignments:
+                try:
+                    for idx, item in enumerate(day_assignments, start=1):
+                        region_id = int(item.get("region"))
+                        day_number = int(item.get("day_number", idx))
+                        normalized_day_assignments.append({"day_number": day_number, "region": region_id})
+                except (TypeError, ValueError, AttributeError):
+                    return Response(
+                        {"error": "day_assignments must be an array of objects with numeric day_number and region."},
+                        status=status.HTTP_400_BAD_REQUEST,
+                    )
+
+                normalized_day_assignments.sort(key=lambda d: d["day_number"])
+                if len(normalized_day_assignments) != total_days:
+                    return Response(
+                        {"error": f"day_assignments count ({len(normalized_day_assignments)}) must equal total_days ({total_days})."},
+                        status=status.HTTP_400_BAD_REQUEST,
+                    )
+
+                expected_days = list(range(1, total_days + 1))
+                actual_days = [d["day_number"] for d in normalized_day_assignments]
+                if actual_days != expected_days:
+                    return Response(
+                        {"error": "day_assignments must contain a continuous day_number sequence starting at 1."},
+                        status=status.HTTP_400_BAD_REQUEST,
+                    )
+            else:
+                if not city_allocations:
+                    return Response(
+                        {"error": "Provide either day_assignments or city_allocations."},
+                        status=status.HTTP_400_BAD_REQUEST,
+                    )
+
+                normalized_allocations = []
+                try:
+                    for alloc in city_allocations:
+                        region_id = int(alloc.get("region"))
+                        days_count = int(alloc.get("days", 0))
+                        if days_count <= 0:
+                            return Response(
+                                {"error": "Each city allocation must have days greater than 0."},
+                                status=status.HTTP_400_BAD_REQUEST,
+                            )
+                        normalized_allocations.append({"region": region_id, "days": days_count})
+                except (TypeError, ValueError, AttributeError):
+                    return Response(
+                        {"error": "city_allocations must be an array of objects with numeric region and days fields."},
+                        status=status.HTTP_400_BAD_REQUEST,
+                    )
+
+                allocated_total = sum(a["days"] for a in normalized_allocations)
+                if allocated_total != total_days:
+                    return Response(
+                        {"error": f"city_allocations sum ({allocated_total}) must equal total_days ({total_days})."},
+                        status=status.HTTP_400_BAD_REQUEST,
+                    )
+
+                day_number = 1
+                for alloc in normalized_allocations:
+                    for _ in range(alloc["days"]):
+                        normalized_day_assignments.append({"day_number": day_number, "region": alloc["region"]})
+                        day_number += 1
+
+            region_ids = {d["region"] for d in normalized_day_assignments}
+            valid_region_ids = set(
+                Region.objects.filter(
+                    id__in=region_ids,
+                    country_id=country_id,
+                    deleted_at__isnull=True,
+                ).values_list("id", flat=True)
+            )
+            invalid_region_ids = sorted(region_ids - valid_region_ids)
+            if invalid_region_ids:
+                return Response(
+                    {"error": f"Invalid regions for selected country: {invalid_region_ids}."},
                     status=status.HTTP_400_BAD_REQUEST,
                 )
 
@@ -112,51 +171,48 @@ class UserPlanViewSet(ModelViewSet):
                     user=request.user,
                     country_id=country_id,
                     name=f"Trip Plan",
-                    total_days=int(total_days),
-                    total_nights=int(total_days) - 1,
+                    total_days=total_days,
+                    total_nights=total_days - 1,
                     start_date=start_date or None,
                     status=PLAN_STATUS.DRAFT,
                     plan_number=generate_plan_number(),
                     share_token=generate_share_token(),
                 )
 
-                day_number = 1
-                for alloc in city_allocations:
-                    region_id = alloc.get("region")
-                    days_count = int(alloc.get("days", 0))
-                    if not region_id or days_count <= 0:
-                        continue
+                template_cache = {}
+                for day_item in normalized_day_assignments:
+                    region_id = day_item["region"]
+                    day_number = day_item["day_number"]
 
-                    # Find the default single-day template for this region
-                    tmpl_qs = ItineraryTemplate.objects.filter(
-                        region_id=region_id,
-                        is_default=True,
-                        is_active=True,
-                        deleted_at__isnull=True,
-                    )
-                    if travel_type:
-                        typed = tmpl_qs.filter(
-                            Q(travel_type=travel_type) | Q(travel_type__isnull=True)
-                        )
-                        tmpl_qs = typed if typed.exists() else tmpl_qs
-
-                    default_template = tmpl_qs.first()
-
-                    # Get the day_tour from the template's day entry (day_number=1)
-                    default_day_tour = None
-                    if default_template:
-                        tmpl_day = default_template.days.filter(day_number=1).first()
-                        default_day_tour = tmpl_day.day_tour if tmpl_day else None
-
-                    for _ in range(days_count):
-                        UserPlanDay.objects.create(
-                            user_plan=plan,
-                            day_number=day_number,
+                    if region_id not in template_cache:
+                        tmpl_qs = ItineraryTemplate.objects.filter(
                             region_id=region_id,
-                            template=default_template,
-                            day_tour=default_day_tour,
+                            is_default=True,
+                            is_active=True,
+                            deleted_at__isnull=True,
                         )
-                        day_number += 1
+                        if travel_type:
+                            typed = tmpl_qs.filter(
+                                Q(travel_type=travel_type) | Q(travel_type__isnull=True)
+                            )
+                            tmpl_qs = typed if typed.exists() else tmpl_qs
+
+                        default_template = tmpl_qs.first()
+                        default_day_tour = None
+                        if default_template:
+                            tmpl_day = default_template.days.filter(day_number=1).first()
+                            default_day_tour = tmpl_day.day_tour if tmpl_day else None
+
+                        template_cache[region_id] = (default_template, default_day_tour)
+
+                    default_template, default_day_tour = template_cache[region_id]
+                    UserPlanDay.objects.create(
+                        user_plan=plan,
+                        day_number=day_number,
+                        region_id=region_id,
+                        template=default_template,
+                        day_tour=default_day_tour,
+                    )
 
                 # Auto-attach all active inclusions/exclusions for this country
                 country_ie = InclusionExclusion.objects.filter(

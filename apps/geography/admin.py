@@ -20,9 +20,9 @@ class RegionImageInline(admin.TabularInline):
 
 @admin.register(Region)
 class RegionAdmin(admin.ModelAdmin):
- list_display=("id","name","code","country","description","display_order","is_active")
+ list_display=("id","name","code","country","has_airport","description","display_order","is_active")
  search_fields=("name","code","country__name")
- list_filter=("country","is_active")
+ list_filter=("country","has_airport","is_active")
  ordering=("country","display_order","name")
  autocomplete_fields=("country",)
  readonly_fields=("created_at","updated_at","deleted_at")

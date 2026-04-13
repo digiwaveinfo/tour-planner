@@ -5,6 +5,7 @@ from apps.day_tours.serializer import DayTourSerializer
 class UserPlanDaySerializer(serializers.ModelSerializer):
     day_tour_name=serializers.CharField(source="day_tour.activity_combination",read_only=True,default=None)
     region_name=serializers.CharField(source="region.name",read_only=True,default=None)
+    region_has_airport=serializers.BooleanField(source="region.has_airport",read_only=True,default=False)
     template_name=serializers.CharField(source="template.name",read_only=True,default=None)
     includes_night=serializers.BooleanField(source="template.includes_night",read_only=True,default=False)
     day_tour_detail=DayTourSerializer(source="day_tour",read_only=True)

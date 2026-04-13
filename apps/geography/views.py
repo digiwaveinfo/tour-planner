@@ -19,6 +19,15 @@ def _parse_star_rating(raw):
     return max(1, min(5, int(m.group()))) if m else 3
 
 
+def _to_bool(raw):
+    if raw is None:
+        return False
+    if isinstance(raw, bool):
+        return raw
+    text = str(raw).strip().lower()
+    return text in {"1", "true", "yes", "y", "t"}
+
+
 class CountryViewSet(ModelViewSet):
     queryset = Country.objects.filter(deleted_at__isnull=True)
     serializer_class = CountrySerializer
@@ -176,6 +185,7 @@ class RegionViewSet(ModelViewSet):
 
                 desc = row.get("description")
                 description = str(desc).strip() if desc and not (isinstance(desc, float) and pd.isna(desc)) else None
+                has_airport = _to_bool(row.get("has_airport"))
                 try:
                     display_order = int(row.get("display_order") or 0)
                 except (ValueError, TypeError):
@@ -191,6 +201,7 @@ class RegionViewSet(ModelViewSet):
                     name=name,
                     code=code,
                     description=description,
+                    has_airport=has_airport,
                     display_order=display_order,
                     is_active=True,
                 )

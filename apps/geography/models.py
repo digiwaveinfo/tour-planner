@@ -34,6 +34,7 @@ class Region(models.Model):
     name=models.CharField(max_length=150)
     code=models.CharField(max_length=10)
     description=models.TextField(null=True,blank=True)
+    has_airport=models.BooleanField(default=False)
     display_order=models.IntegerField(default=0)
     is_active=models.BooleanField(default=True)
     created_at=models.DateTimeField(auto_now_add=True)
