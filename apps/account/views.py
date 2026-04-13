@@ -5,9 +5,14 @@ from .serializer import *
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
+from django_filters.rest_framework import DjangoFilterBackend
+from rest_framework.filters import SearchFilter
 
 class UserViewSet(ModelViewSet):
     serializer_class = UserSerializer
+    filter_backends = [DjangoFilterBackend, SearchFilter]
+    filterset_fields = ["role", "flag", "is_active"]
+    search_fields = ["name", "email", "phone"]
     def get_queryset(self):
         user = self.request.user
         queryset = User.objects.filter(deleted_at__isnull=True,is_active=True).order_by("-created_at")

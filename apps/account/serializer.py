@@ -10,14 +10,18 @@ class UserSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = ["id", "email", "name", "password","flag"]
+        fields = ["id", "email", "name", "password", "flag", "role"]
+        extra_kwargs = {
+            "role": {"required": False}
+        }
 
     def create(self, validated_data):
         request = self.context.get("request")
+        requested_role = validated_data.pop("role", None)
         role = UserRoletype.USER
         if request and request.user.is_authenticated:
             if request.user.role == UserRoletype.SUPER_ADMIN:
-                role = UserRoletype.AGENT
+                role = requested_role if requested_role in {UserRoletype.AGENT, UserRoletype.USER} else UserRoletype.AGENT
             elif request.user.role == UserRoletype.AGENT:
                 role = UserRoletype.USER
         validated_data["role"] = role
