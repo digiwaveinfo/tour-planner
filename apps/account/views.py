@@ -4,21 +4,30 @@ from rest_framework import status
 from .serializer import *
 from rest_framework.decorators import action
 from rest_framework.response import Response
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import IsAuthenticated, AllowAny
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.filters import SearchFilter
+from common.constant import UserRoletype
 
 class UserViewSet(ModelViewSet):
     serializer_class = UserSerializer
+    permission_classes = [IsAuthenticated]
     filter_backends = [DjangoFilterBackend, SearchFilter]
     filterset_fields = ["role", "flag", "is_active"]
     search_fields = ["name", "email", "phone"]
+
     def get_queryset(self):
         user = self.request.user
-        queryset = User.objects.filter(deleted_at__isnull=True,is_active=True).order_by("-created_at")
+        queryset = User.objects.filter(deleted_at__isnull=True, is_active=True).order_by("-created_at")
         queryset = queryset.filter(is_superuser=False)
-        queryset = queryset.exclude(id=user.id)
-        return queryset
+
+        if user.is_superuser or user.role == UserRoletype.SUPER_ADMIN:
+            return queryset.exclude(id=user.id)
+
+        if user.role == UserRoletype.AGENT:
+            return queryset.filter(created_by=user)
+
+        return queryset.filter(id=user.id)
 
     def get_serializer_class(self):
         if self.action in ["list", "retrieve"]:
@@ -30,7 +39,7 @@ class UserViewSet(ModelViewSet):
         context["request"] = self.request
         return context  
 
-    @action(detail=False, methods=["post"])
+    @action(detail=False, methods=["post"], permission_classes=[AllowAny])
     def login(self, request):
         serializer = LoginSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -50,7 +59,7 @@ class UserViewSet(ModelViewSet):
             }
         })
     
-    @action(detail=False, methods=["post"])
+    @action(detail=False, methods=["post"], permission_classes=[AllowAny])
     def register(self, request):
         serializer = RegisterSerializer(data=request.data,context={"request": request})
         serializer.is_valid(raise_exception=True)
